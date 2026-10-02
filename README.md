@@ -6,7 +6,7 @@ Port limpio de tus scripts `backup_script/final.php` (radios) y `tplink/2new.sh`
 
 | Antes (PC/WSL) | Ahora (APK) |
 |---|---|
-| `final.php`: detecta 192.168.1.20 (ubnt/ubnt) o 192.168.20.1, SSH, `status.cgi` → modelo + FW, sube `fwupdate.bin`, genera `system.cfg` desde `template.cfg` (CHANGESSID + 80.50→WAN + 80.1→GW), sube `ct` compliance, `cfgmtd + reboot`, o reset fábrica | `UbntPage`: Detectar → Firmware → Zona/AP (de `nodos.db` local) → Subir config + reboot / Reset. `lib/features/radio_ubiquiti/data/ubnt_repository_impl.dart` |
+| `final.php`: detecta 192.168.1.20 (ubnt/ubnt) o 192.168.20.1, SSH, `status.cgi` → modelo + FW, sube `fwupdate.bin`, genera `system.cfg` desde `template.cfg` (CHANGESSID + 80.50→WAN + 80.1→GW), sube `ct` compliance, `cfgmtd + reboot`, o reset fábrica | `UbntPage`: elegir IP del radio (Auto 1.20 → **192.168.172.1 WiFi del radio** → 20.1, o forzar una) → Detectar → Firmware → Zona/AP (de `nodos.db` local) → Subir config + reboot / Reset. `lib/features/radio_ubiquiti/data/ubnt_repository_impl.dart` |
 | `2new.sh` opción 1: router nuevo 192.168.0.1/admin → login cookie MD5+Base64+KEY, `StatusRpm.htm` (nuevo vs viejo), cambia pass admin, WPS off, DHCP off, UPnP off, remoto on, SSID, WPA2-PSK AES, LAN 192.168.20.2 | `TplinkPage` modo Nuevo: `TplinkRepositoryImpl.provisionNew()` misma secuencia GET |
 | Opción 2: 192.168.20.2 → solo cambia clave WiFi + reboot | `TplinkPage` modo Existente: `changeWifiPass()` |
 | `nodos/nodos.db` (zona/network + accesspoints/ssid) en PC | `assets/seed/nodos.db` + `sqflite` en el móvil. Se **instala sola en el primer arranque** (8 zonas + 259 APs reales). Zonas reales: Girardota 80., Medellín 50., Guarne 60., etc. |
@@ -76,9 +76,9 @@ Ya van fusionados en `android/app/src/main/AndroidManifest.xml` (`INTERNET`, `AC
 
 ## 5. Uso en campo
 
-1. Conecta el móvil al radio (WiFi o OTG-Ethernet, IP del móvil en 192.168.1.x).
+1. Conecta el móvil al radio: por el **WiFi que emite el propio radio** (entonces el radio está en **192.168.172.1**, IP por defecto en su red de servicio) o por su LAN/OTG-Ethernet (192.168.1.20 de fábrica / 192.168.20.1 ya configurado).
 2. Tab Zonas: verifica Zona/AP y WAN esperada (`.50` / GW `.1`).
-3. Tab Radio: **1 Detectar** → elige pass SSH → elige Zona/AP → **3 Subir config**. O Reset si es necesario.
+3. Tab Radio: elige **IP del radio** (Auto = 1.20 → 172.1 → 20.1; o fija 192.168.172.1 si estás en su WiFi) → **1 Detectar** → elige pass SSH → elige Zona/AP → **3 Subir config**. O Reset si es necesario.
 4. Conecta al router: Nuevo → únete a su WiFi de fábrica → **Conectar 192.168.0.1** → SSID+clave → **Aprovisionar**. Existente → WiFi del cliente → **Conectar .20.2** → nueva clave → reboot.
 
 ## 6. Arquitectura limpia (30 años, sin atajos)

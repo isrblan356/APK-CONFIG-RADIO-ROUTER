@@ -4,6 +4,11 @@ class AppConfig {
   // --- Ubiquiti (port de final.php) ---
   static const ubntDefaultIp = '192.168.1.20';
   static const ubntConfiguredIp = '192.168.20.1';
+  // IP del radio cuando el móvil está en el WiFi que emite el propio radio
+  // (SSID de fábrica): ahí el equipo escucha en 192.168.172.1/24.
+  static const ubntWifiIp = '192.168.172.1';
+  // Orden de sondeo del modo Auto: fábrica -> WiFi del radio -> ya configurado.
+  static const ubntCandidateIps = [ubntDefaultIp, ubntWifiIp, ubntConfiguredIp];
   static const ubntDefaultUser = 'ubnt';
   static const ubntDefaultPass = 'ubnt';
   static const ubntKnownPasses = ['ubnt', 'r1nku.2015', 'R1nku.2015'];

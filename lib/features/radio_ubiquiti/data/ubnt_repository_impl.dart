@@ -15,7 +15,8 @@ import '../domain/template_builder.dart';
 /// Implementación real SSH. Port fiel de final.php a dartssh2 (móvil).
 ///
 /// Flujo original preservado:
-/// 1. ubnt_is_alive(192.168.1.20) si no -> (192.168.20.1)
+/// 1. ubnt_is_alive por candidatas: 192.168.1.20 (fábrica),
+///    192.168.172.1 (WiFi del radio) y 192.168.20.1 (ya configurada)
 /// 2. espera ssh_init_wait, reintenta ssh_tries
 /// 3. login con pass1, si falla reintenta con R1nku.2015 (líneas 221-231)
 /// 4. /usr/www/status.cgi -> modelo + fwversion (+ XW/XM si M5, flag AC)
@@ -91,53 +92,38 @@ class UbntRepositoryImpl implements UbntRepository {
         ip: ip, model: model, firmware: fw, isAc: isAc, lanSpeedDuplex: duplex);
   }
 
-  Future<(UbntRadio, String workingPass)?> _detect() async {
-    // 1) IP por defecto de fábrica
-    if (await reachability.isUbntAlive(AppConfig.ubntDefaultIp)) {
-      for (final pass in AppConfig.ubntKnownPasses) {
-        final c = await _connect(
-            AppConfig.ubntDefaultIp, AppConfig.ubntDefaultUser, pass);
-        if (c == null) continue;
-        try {
-          final raw = await _exec(c, '/usr/www/status.cgi');
-          final radio =
-              _parseStatus(AppConfig.ubntDefaultIp, raw);
-          c.close();
-          return (radio, pass);
-        } catch (_) {
-          c.close();
-        }
-      }
-    }
-    // 2) IP ya configurada
-    if (await reachability.isUbntAlive(AppConfig.ubntConfiguredIp)) {
-      for (final pass in AppConfig.ubntKnownPasses) {
-        final c = await _connect(
-            AppConfig.ubntConfiguredIp, AppConfig.ubntDefaultUser, pass);
-        if (c == null) continue;
-        try {
-          final raw = await _exec(c, '/usr/www/status.cgi');
-          final radio =
-              _parseStatus(AppConfig.ubntConfiguredIp, raw);
-          c.close();
-          return (radio, pass);
-        } catch (_) {
-          c.close();
-        }
+  Future<(UbntRadio, String workingPass)?> _detect(String ip) async {
+    if (!await reachability.isUbntAlive(ip)) return null;
+    for (final pass in AppConfig.ubntKnownPasses) {
+      final c = await _connect(ip, AppConfig.ubntDefaultUser, pass);
+      if (c == null) continue;
+      try {
+        final raw = await _exec(c, '/usr/www/status.cgi');
+        final radio = _parseStatus(ip, raw);
+        c.close();
+        return (radio, pass);
+      } catch (_) {
+        c.close();
       }
     }
     return null;
   }
 
   @override
-  Future<Either<Failure, UbntRadio>> detectAndIdentify() async {
+  Future<Either<Failure, UbntRadio>> detectAndIdentify({String? ip}) async {
     try {
-      final found = await _detect();
-      if (found == null) {
-        return const Left(ConnectionFailure(
-            'No responde 192.168.1.20 ni 192.168.20.1 por SSH/puerto 22-80. Verifica que el móvil esté conectado al radio.'));
+      // Sin IP explícita: fábrica -> WiFi del radio (172.1) -> configurada.
+      final targets = (ip == null || ip.isEmpty)
+          ? AppConfig.ubntCandidateIps
+          : <String>[ip];
+      for (final t in targets) {
+        final found = await _detect(t);
+        if (found != null) return Right(found.$1);
       }
-      return Right(found.$1);
+      return Left(ConnectionFailure(
+          'No responde ${targets.join(' ni ')} por SSH/puerto 22-80. '
+          'Verifica que el móvil esté en el WiFi del radio (192.168.172.1) '
+          'o cableado a su LAN.'));
     } catch (e) {
       return Left(DeviceFailure('Error identificando radio: $e'));
     }

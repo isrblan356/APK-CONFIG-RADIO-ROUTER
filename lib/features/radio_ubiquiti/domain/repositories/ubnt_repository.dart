@@ -4,9 +4,12 @@ import '../entities/ubnt_radio.dart';
 
 /// Casos de uso puros. La UI solo habla con estos, nunca con SSH directo.
 abstract class UbntRepository {
-  /// Detecta radio en 192.168.1.20 (ubnt/ubnt) o 192.168.20.1 (pass config).
+  /// Detecta la radio. Si [ip] viene, se sondea solo esa IP (ej.
+  /// 192.168.172.1, la que usa el radio al estar el móvil en su WiFi);
+  /// si es null, se recorren AppConfig.ubntCandidateIps en orden
+  /// (1.20 fábrica, 172.1 WiFi del radio, 20.1 ya configurada).
   /// Port de las líneas 161-173 de final.php.
-  Future<Either<Failure, UbntRadio>> detectAndIdentify();
+  Future<Either<Failure, UbntRadio>> detectAndIdentify({String? ip});
 
   /// Sube firmware si la versión no coincide (port ubnt_update_firmware).
   Future<Either<Failure, void>> updateFirmwareIfNeeded(UbntRadio radio, String sshPass, void Function(String) onLog);

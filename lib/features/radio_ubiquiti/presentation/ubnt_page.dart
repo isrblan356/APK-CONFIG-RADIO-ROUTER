@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/di/providers.dart';
 import '../../inventory/domain/entities.dart';
 import '../domain/entities/ubnt_radio.dart';
@@ -15,6 +16,7 @@ class UbntPage extends ConsumerStatefulWidget {
 class _UbntPageState extends ConsumerState<UbntPage> {
   UbntRadio? radio;
   String sshPass = 'ubnt';
+  String ipChoice = 'auto'; // 'auto' o una IP fija (ej. 192.168.172.1)
   Zone? zone;
   AccessPoint? ap;
   String log = '';
@@ -101,7 +103,8 @@ class _UbntPageState extends ConsumerState<UbntPage> {
                       busy = true;
                       log = '';
                     });
-                    final r = await ubnt.detectAndIdentify();
+                    final r = await ubnt.detectAndIdentify(
+                        ip: ipChoice == 'auto' ? null : ipChoice);
                     r.fold(
                       (f) => addLog('ERROR: ${f.message}'),
                       (rad) {
@@ -135,6 +138,25 @@ class _UbntPageState extends ConsumerState<UbntPage> {
         DropdownButtonFormField<String>(
           // initialValue + key: así el campo refleja cambios externos de estado
           // (value: quedó deprecado en Flutter 3.33+).
+          key: ValueKey('ip-$ipChoice'),
+          initialValue: ipChoice,
+          items: const [
+            DropdownMenuItem(
+                value: 'auto', child: Text('Auto (1.20 → 172.1 → 20.1)')),
+            DropdownMenuItem(
+                value: AppConfig.ubntWifiIp,
+                child: Text('${AppConfig.ubntWifiIp} (WiFi del radio)')),
+            DropdownMenuItem(
+                value: AppConfig.ubntDefaultIp,
+                child: Text('${AppConfig.ubntDefaultIp} (fábrica)')),
+            DropdownMenuItem(
+                value: AppConfig.ubntConfiguredIp,
+                child: Text('${AppConfig.ubntConfiguredIp} (ya configurada)')),
+          ],
+          onChanged: (v) => setState(() => ipChoice = v ?? 'auto'),
+          decoration: const InputDecoration(labelText: 'IP del radio (destino)'),
+        ),
+        DropdownButtonFormField<String>(
           key: ValueKey('ssh-$sshPass'),
           initialValue: sshPass,
           items: const ['ubnt', 'r1nku.2015', 'R1nku.2015']
