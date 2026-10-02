@@ -1,0 +1,10 @@
+{
+  "models": [
+    { "model": "PowerBeam M5 400 XW", "fw": "XM.v6.3.2", "asset": "assets/firmware/PowerBeam M5 400 XW/fwupdate.bin" },
+    { "model": "PowerBeam M5 300 XW", "fw": "XM.v6.3.2", "asset": "assets/firmware/PowerBeam M5 300 XW/fwupdate.bin" },
+    { "model": "LiteBeam M5 XW", "fw": "XM.v6.3.2", "asset": "assets/firmware/LiteBeam M5 XW/fwupdate.bin" },
+    { "model": "Rocket M5 XW", "fw": "XW.v6.3.2", "asset": "assets/firmware/Rocket M5 XW/fwupdate.bin" },
+    { "model": "NanoBeam 5AC 16", "fw": "v8.7.4", "asset": "assets/firmware/NanoBeam 5AC 16/fwupdate.bin" }
+  ],
+  "note": "Copia tus .bin de backup_script/Firmware/ a estas rutas. Quedan EMBARCADOS en la APK (instalado en el móvil, sin descargar nada)."
+}

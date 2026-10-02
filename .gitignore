@@ -1,0 +1,28 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+.pub-cache/
+.pub/
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Android
+local.properties
+*.keystore
+*.jks
+android/key.properties
+
+# Firmwares grandes: no subir todos al repo, solo los 2 de ejemplo.
+# Descomenta si usas Git LFS para bins:
+# assets/firmware/**/*.bin filter=lfs diff=lfs merge=lfs -text
+
+# Local
+*.log
+.DS_Store
+Thumbs.db

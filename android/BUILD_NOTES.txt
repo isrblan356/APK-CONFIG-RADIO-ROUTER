@@ -1,0 +1,30 @@
+# Fusiona esto en android/app/src/main/AndroidManifest.xml (dentro de <manifest>):
+#
+# <uses-permission android:name="android.permission.INTERNET" />
+# <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+# <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+# <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+# <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+# <application android:usesCleartextTraffic="true" ...>
+#
+# Y en android/app/build.gradle (para APK grande con firmwares):
+#
+# android {
+#     compileSdk 34
+#     defaultConfig {
+#         applicationId "com.rinku.wisp_configurator"
+#         minSdk 23
+#         targetSdk 34
+#         versionCode 1
+#         versionName "1.0.0"
+#     }
+#     buildTypes {
+#         release {
+#             minifyEnabled true
+#             shrinkResources true
+#             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+#         }
+#     }
+#     // Los .bin de firmware van como assets comprimidos; si superas 150MB usa:
+#     // bundle { language { enableSplit = true } density { enableSplit = true } abi { enableSplit = true } }
+# }
