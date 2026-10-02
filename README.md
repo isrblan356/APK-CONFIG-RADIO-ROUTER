@@ -30,6 +30,19 @@ Port limpio de tus scripts `backup_script/final.php` (radios) y `tplink/2new.sh`
 
 ## 4. Compilar la APK
 
+### Opción A — GitHub Actions (recomendada, no instala nada en tu PC)
+
+Cada push a `main` corre `.github/workflows/build-apk.yml`:
+`flutter pub get` → `flutter analyze` → `flutter test` → `flutter build apk --release`.
+
+1. En el repo, pestaña **Actions** → workflow *build-apk*.
+2. Cuando quedó verde, baja el artifact **`wisp-configurador-apk`** (un `.zip` con `app-release.apk`).
+3. Pásalo por USB/WhatsApp/Drive e instálalo.
+
+Build manual sin subir código: Actions → *Run workflow* (botón "Run workflow").
+
+### Opción B — Local (Flutter + Android Studio)
+
 ```bash
 # 1. Instala Flutter 3.22+ y Android Studio (SDK + Build-Tools)
 flutter doctor
@@ -49,14 +62,13 @@ flutter test
 # 5. APK release instalada en el móvil
 flutter build apk --release
 # sale en: build\app\outputs\flutter-apk\app-release.apk
-# pásala por USB/WhatsApp/Drive e instálala.
 
 # Con nube:
 flutter build apk --release --dart-define=CLOUD_ENDPOINT=https://tu-api.com
 ```
 
 ### Permisos Android
-Ver `android/AndroidManifest.snippet.xml`: `INTERNET` (sockets locales SSH/HTTP), `ACCESS_WIFI_STATE`, `ACCESS_FINE_LOCATION` (requerido por Android 10+ para ver SSID), `usesCleartextTraffic=true` (los TP-Link y AirOS usan HTTP, no HTTPS). Fusiona el snippet en tu `AndroidManifest.xml` generado por `flutter create`.
+Ya van fusionados en `android/app/src/main/AndroidManifest.xml` (`INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `CHANGE_WIFI_STATE`, `ACCESS_FINE_LOCATION` + `usesCleartextTraffic=true`, porque TP-Link y AirOS hablan HTTP). `android/AndroidManifest.snippet.xml` queda como referencia si regeneras el proyecto con `flutter create`.
 
 ### Troubleshooting de build
 - **`flutter test` falla con "Una directiva de Control de aplicaciones bloqueó este archivo"**: es Windows **Smart App Control** bloqueando `impellerc.exe` / `flutter_tester.exe` (van sin firma). Desactívalo en Seguridad de Windows → Control de aplicaciones y navegador → Smart App Control (decisión única, no reversible sin reinstalar). Mientras esté activo, `flutter analyze` sí funciona y es la verificación que se usa.
