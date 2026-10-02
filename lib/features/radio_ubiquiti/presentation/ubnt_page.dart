@@ -133,7 +133,10 @@ class _UbntPageState extends ConsumerState<UbntPage> {
         ]),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: sshPass,
+          // initialValue + key: así el campo refleja cambios externos de estado
+          // (value: quedó deprecado en Flutter 3.33+).
+          key: ValueKey('ssh-$sshPass'),
+          initialValue: sshPass,
           items: const ['ubnt', 'r1nku.2015', 'R1nku.2015']
               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
@@ -150,7 +153,8 @@ class _UbntPageState extends ConsumerState<UbntPage> {
           Text('Error zonas: $zonesError')
         else
           DropdownButtonFormField<Zone>(
-            value: zones.contains(zone) ? zone : null,
+            key: ValueKey(zone),
+            initialValue: zones.contains(zone) ? zone : null,
             items: zones
                 .map((z) => DropdownMenuItem(
                     value: z, child: Text('${z.id} - ${z.name}')))
@@ -168,7 +172,8 @@ class _UbntPageState extends ConsumerState<UbntPage> {
                   child: LinearProgressIndicator(),
                 )
               : DropdownButtonFormField<AccessPoint>(
-                  value: aps.contains(ap) ? ap : null,
+                  key: ValueKey(ap),
+                  initialValue: aps.contains(ap) ? ap : null,
                   items: aps
                       .map((a) => DropdownMenuItem(
                           value: a,

@@ -1,5 +1,5 @@
 import 'package:dartz/dartz.dart';
-import '../../../core/error/failures.dart';
+import '../../../../core/error/failures.dart';
 import '../entities/ubnt_radio.dart';
 
 /// Casos de uso puros. La UI solo habla con estos, nunca con SSH directo.

@@ -26,3 +26,6 @@ android/key.properties
 *.log
 .DS_Store
 Thumbs.db
+
+# Generado por `flutter pub get` (se regenera en cada build)
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java

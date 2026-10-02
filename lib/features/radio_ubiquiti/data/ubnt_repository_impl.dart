@@ -143,9 +143,6 @@ class UbntRepositoryImpl implements UbntRepository {
     }
   }
 
-  String _assetTemplatePath(String model) =>
-      'assets/templates/${model.trim()}/template.cfg';
-
   /// Genera system.cfg aplicando los 3 reemplazos de final.php.
   /// [templateRaw] es el contenido de template.cfg embarcado en la APK.
   /// Delegado al builder puro para que sea testeable sin Flutter.

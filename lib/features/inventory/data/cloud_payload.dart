@@ -15,11 +15,12 @@ class CloudPayload {
   static const zoneKeys = ['zones', 'data', 'items', 'rows'];
   static const apKeys = ['aps', 'accesspoints', 'data', 'items', 'rows'];
 
-  static List<Map<String, dynamic>> rows(dynamic body, List<String> keys) {
-    dynamic decoded;
+  static List<Map<String, dynamic>> rows(Object? body, List<String> keys) {
+    Object? decoded;
     try {
       decoded = json.decode(body as String);
     } catch (_) {
+      // JSON roto o no-string: se trata como "sin datos".
       return const [];
     }
     if (decoded is List) return decoded.whereType<Map>().map(_map).toList();

@@ -15,7 +15,10 @@ dependencies:
   http: ^1.2.1
   sqflite: ^2.3.3
   path: ^1.9.0
-  path_provider: ^2.1.3
+  # OJO: no agregues path_provider aquí. No se usa (sqflite trae
+  # getDatabasesPath) y arrastra objective_c, cuyo hook nativo rompe
+  # `flutter test` / `flutter build` en rutas con espacios (ej. C:\Users\ISRAEL B\...).
+  # path_provider: ^2.1.3
   crypto: ^3.0.3
   pointycastle: ^3.9.1
   connectivity_plus: ^6.0.3

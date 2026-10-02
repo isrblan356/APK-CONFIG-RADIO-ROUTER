@@ -63,7 +63,9 @@ class InventoryLocal implements InventoryRepository {
       // Archivo corrupto/incompatible: se rehace desde el seed (una sola vez).
       try {
         await File(path).delete();
-      } catch (_) {}
+      } catch (_) {
+        // Si no se pudo borrar, el siguiente open lanza y zones() reporta error.
+      }
       await _installSeed(path);
       db = await openDatabase(path);
     }

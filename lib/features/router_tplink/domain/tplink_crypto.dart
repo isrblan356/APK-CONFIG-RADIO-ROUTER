@@ -15,7 +15,7 @@ class TplinkCrypto {
   static const newPassHash = '57a298a940e7713eb606c3b0d77a460a'; // admin/r1nku2015
 
   static Uint8List _keyBytes() {
-    final hex = desHexKey;
+    const hex = desHexKey;
     final out = Uint8List(hex.length ~/ 2);
     for (var i = 0; i < out.length; i++) {
       out[i] = int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16);

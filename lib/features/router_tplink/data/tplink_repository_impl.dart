@@ -56,16 +56,6 @@ class TplinkRepositoryImpl implements TplinkRepository {
   TplinkInfo _parseStatus(String ip, TplinkGen gen, String key, String html) {
     // Los .sh hacen: split </SCRIPT> y ';', buscan var ... status / lanPara / wlanPara / wanPara.
     // Aquí regex equivalentes, más robusto en móvil.
-    String pick(RegExp re, int group, {int commaIndex = -1}) {
-      final m = re.firstMatch(html);
-      if (m == null) return '';
-      var v = m.group(group) ?? '';
-      if (commaIndex >= 0) {
-        final parts = v.split(',');
-        if (commaIndex < parts.length) v = parts[commaIndex];
-      }
-      return v.replaceAll('"', '').trim();
-    }
     // statusPara: la posición 6=fw, 7=hw en la mayoría de firmwares (ver .sh cut -f6/-f7)
     final statusLine = RegExp(r'var\s+statusPara\s*=\s*new\s+Array\(([^)]+)\)').firstMatch(html);
     String fw = '', hw = '';
@@ -97,7 +87,7 @@ class TplinkRepositoryImpl implements TplinkRepository {
     return TplinkInfo(ip: ip, gen: gen, key: key, hw: hw, fw: fw, lanIp: lanIp, ssid: ssid, wanMac: mac);
   }
 
-  Future<http.Response> _get(TplinkInfo s, String passOrCookie, String path, {bool isCookie = true}) {
+  Future<http.Response> _get(TplinkInfo s, String passOrCookie, String path) {
     final url = Uri.parse('${s.baseUrl}$path');
     if (s.gen == TplinkGen.modern) {
       final cookie = _authCookie(passOrCookie);
