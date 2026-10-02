@@ -11,7 +11,9 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_riverpod: ^2.5.1
-  dartssh2: ^2.10.0
+  # 2.14.0 no compila con Dart >= 3.7 (error de no-promoción tras await en
+  # sftp_client.dart). 2.22.5+ exige pointycastle ^4 por eso van juntos.
+  dartssh2: ^2.22.5
   http: ^1.2.1
   sqflite: ^2.3.3
   path: ^1.9.0
@@ -20,7 +22,7 @@ dependencies:
   # `flutter test` / `flutter build` en rutas con espacios (ej. C:\Users\ISRAEL B\...).
   # path_provider: ^2.1.3
   crypto: ^3.0.3
-  pointycastle: ^3.9.1
+  pointycastle: ^4.0.0
   connectivity_plus: ^6.0.3
   permission_handler: ^11.3.1
   network_info_plus: ^6.0.0
