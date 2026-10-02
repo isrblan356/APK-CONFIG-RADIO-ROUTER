@@ -35,11 +35,50 @@ jobs:
       - name: Tests
         run: flutter test
 
+      - name: Entorno Android
+        run: |
+          flutter doctor -v
+
+      # compileSdk/targetSdk por defecto de Flutter 3.47 = 36 (ver FlutterExtension.kt)
+      - name: Plataforma Android 36
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
       - name: Licencias del Android SDK
         run: yes | flutter doctor --android-licenses >/dev/null || true
 
       - name: APK release
-        run: flutter build apk --release
+        run: |
+          set -o pipefail
+          flutter build apk --release 2>&1 | tee build.log
+
+      # Los logs de Actions piden iniciar sesión; los errores se publican como
+      # anotaciones (visibles en la pestaña del run sin sesión).
+      - name: Diagnóstico si falla
+        if: failure()
+        run: |
+          dump() {
+            while IFS= read -r line; do
+              [ -z "$line" ] && continue
+              msg="$(printf '%s' "$line" | sed -e 's/%/%25/g' -e 's/\r//g')"
+              printf '::error::%s\n' "$msg"
+            done
+          }
+          echo "=== últimas líneas de build.log ==="
+          tail -n 35 build.log 2>/dev/null | dump || true
+          echo "=== flutter doctor -v ==="
+          flutter doctor -v 2>&1 | tail -n 25 | dump || true
+
+      - name: Guardar log del build
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Publicar APK (artifact)
         uses: actions/upload-artifact@v4
