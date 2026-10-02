@@ -58,6 +58,10 @@ flutter build apk --release --dart-define=CLOUD_ENDPOINT=https://tu-api.com
 ### Permisos Android
 Ver `android/AndroidManifest.snippet.xml`: `INTERNET` (sockets locales SSH/HTTP), `ACCESS_WIFI_STATE`, `ACCESS_FINE_LOCATION` (requerido por Android 10+ para ver SSID), `usesCleartextTraffic=true` (los TP-Link y AirOS usan HTTP, no HTTPS). Fusiona el snippet en tu `AndroidManifest.xml` generado por `flutter create`.
 
+### Troubleshooting de build
+- **`flutter test` falla con "Una directiva de Control de aplicaciones bloqueó este archivo"**: es Windows **Smart App Control** bloqueando `impellerc.exe` / `flutter_tester.exe` (van sin firma). Desactívalo en Seguridad de Windows → Control de aplicaciones y navegador → Smart App Control (decisión única, no reversible sin reinstalar). Mientras esté activo, `flutter analyze` sí funciona y es la verificación que se usa.
+- **`Building native assets for package:objective_c failed` / `"C:\Users\..." no se reconoce`**: no metas `path_provider` en `pubspec.yaml`. Arrastra `objective_c`, cuyo hook nativo compila rutas con `cmd` sin comillas y rompe en directorios con espacios (ver comentario en `pubspec.yaml`).
+
 ## 5. Uso en campo
 
 1. Conecta el móvil al radio (WiFi o OTG-Ethernet, IP del móvil en 192.168.1.x).
