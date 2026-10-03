@@ -1,4 +1,4 @@
-name: build-apk
+name: ISP CONFIG APK
 
 on:
   push:
@@ -83,7 +83,7 @@ jobs:
       - name: Publicar APK (artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: wisp-configurador-apk
+          name: isp-config-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 30

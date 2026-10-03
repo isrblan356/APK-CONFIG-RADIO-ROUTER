@@ -1,4 +1,4 @@
-# WISP Configurador — APK Flutter (Ubiquiti + TP-Link, 100% en el móvil)
+# ISP CONFIG — APK Flutter (Ubiquiti + TP-Link, 100% en el móvil)
 
 Port limpio de tus scripts `backup_script/final.php` (radios) y `tplink/2new.sh` + `newchangepass.sh` (routers) a una APK offline-first con sync híbrido opcional.
 
@@ -38,7 +38,7 @@ Cada push a `main` corre `.github/workflows/build-apk.yml`:
 `flutter pub get` → `flutter analyze` → `flutter test` → `flutter build apk --release`.
 
 1. En el repo, pestaña **Actions** → workflow *build-apk*.
-2. Cuando quedó verde, baja el artifact **`wisp-configurador-apk`** (un `.zip` con `app-release.apk`).
+2. Cuando quedó verde, baja el artifact **`isp-config-apk`** (un `.zip` con `app-release.apk`).
 3. Pásalo por USB/WhatsApp/Drive e instálalo.
 
 Build manual sin subir código: Actions → *Run workflow* (botón "Run workflow").

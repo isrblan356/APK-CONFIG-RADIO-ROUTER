@@ -6,12 +6,12 @@ import 'features/radio_ubiquiti/presentation/ubnt_page.dart';
 import 'features/router_tplink/presentation/tplink_page.dart';
 import 'features/inventory/presentation/zones_page.dart';
 
-class WispApp extends StatelessWidget {
-  const WispApp({super.key});
+class IspApp extends StatelessWidget {
+  const IspApp({super.key});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'WISP Configurador',
+      title: 'ISP CONFIG',
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
       home: const HomeTabs(),
     );
