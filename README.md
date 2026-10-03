@@ -10,6 +10,7 @@ Port limpio de tus scripts `backup_script/final.php` (radios) y `tplink/2new.sh`
 | `2new.sh` opción 1: router nuevo 192.168.0.1/admin → login cookie MD5+Base64+KEY, `StatusRpm.htm` (nuevo vs viejo), cambia pass admin, WPS off, DHCP off, UPnP off, remoto on, SSID, WPA2-PSK AES, LAN 192.168.20.2 | `TplinkPage` modo Nuevo: `TplinkRepositoryImpl.provisionNew()` misma secuencia GET |
 | Opción 2: 192.168.20.2 → solo cambia clave WiFi + reboot | `TplinkPage` modo Existente: `changeWifiPass()` |
 | `nodos/nodos.db` (zona/network + accesspoints/ssid) en PC | `assets/seed/nodos.db` + `sqflite` en el móvil. Se **instala sola en el primer arranque** (8 zonas + 259 APs reales). Zonas reales: Girardota 80., Medellín 50., Guarne 60., etc. |
+| ¿Hacia dónde apunto la antena? GPS + brújula del celular | Tab **Brújula** (AR): cámara con marcador que indica Δ grados y distancia al nodo elegido; si no hay cámara/sensores, mira de brújula. Nodos **manuales** o **bajados de la nube**. `lib/features/ar_compass/` |
 
 ## 2. Todo instalado en el móvil (offline)
 
@@ -26,7 +27,8 @@ Port limpio de tus scripts `backup_script/final.php` (radios) y `tplink/2new.sh`
 - `AppConfig.cloudEnabledDefault = false` + `CLOUD_ENDPOINT = ''` → 100% local.
 - Para activar: `InventoryLocal(cloud, cloudEnabled: true)` + `--dart-define=CLOUD_ENDPOINT=https://tu-api`.
 - Contrato: `GET /zones` → `[{"id":1,"zona":"Girardota","network":"192.168.80."}]` y `GET /aps?zona=1` → `[{"idzona":"1","idnodo":1,"nodo":"La Palma - AP1","ssid":"rinku_ap1_lapalma"}]`. Acepta envoltorios (`{"zones":[...]}`, `{"data":[...]}`) y alias en inglés (`name`/`network`/`zoneId`): ver `lib/features/inventory/data/cloud_payload.dart`.
-- La sync **nunca borra lo local**: solo reemplaza si la nube devolvió datos válidos; si algo falla, sigues con la DB del móvil.
+- Contrato de nodos con coordenadas (tab Brújula): `GET /nodes` → `[{"id":1,"nombre":"Girardota AP12","lat":6.3201,"lng":-75.4382,"alt":1500,"zona":"Girardota"}]`. Acepta `{"nodes":[...]}`, alias (`name`/`latitude`/`longitude`/`lon`) y coma decimal. Ver `lib/features/ar_compass/data/ar_nodes_cloud.dart`.
+- La sync **nunca borra lo local**: solo reemplaza si la nube devolvió datos válidos; si algo falla, sigues con la DB del móvil. En el módulo Brújula solo se reemplazan los nodos de origen `nube`: los **manuales jamás se borran**.
 
 ## 4. Compilar la APK
 
@@ -68,7 +70,7 @@ flutter build apk --release --dart-define=CLOUD_ENDPOINT=https://tu-api.com
 ```
 
 ### Permisos Android
-Ya van fusionados en `android/app/src/main/AndroidManifest.xml` (`INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `CHANGE_WIFI_STATE`, `ACCESS_FINE_LOCATION` + `usesCleartextTraffic=true`, porque TP-Link y AirOS hablan HTTP). `android/AndroidManifest.snippet.xml` queda como referencia si regeneras el proyecto con `flutter create`.
+Ya van fusionados en `android/app/src/main/AndroidManifest.xml` (`INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `CHANGE_WIFI_STATE`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `CAMERA` + `usesCleartextTraffic=true`, porque TP-Link y AirOS hablan HTTP). `android/AndroidManifest.snippet.xml` queda como referencia si regeneras el proyecto con `flutter create`.
 
 ### Troubleshooting de build
 - **`flutter test` falla con "Una directiva de Control de aplicaciones bloqueó este archivo"**: es Windows **Smart App Control** bloqueando `impellerc.exe` / `flutter_tester.exe` (van sin firma). Desactívalo en Seguridad de Windows → Control de aplicaciones y navegador → Smart App Control (decisión única, no reversible sin reinstalar). Mientras esté activo, `flutter analyze` sí funciona y es la verificación que se usa.
@@ -80,6 +82,7 @@ Ya van fusionados en `android/app/src/main/AndroidManifest.xml` (`INTERNET`, `AC
 2. Tab Zonas: verifica Zona/AP y WAN esperada (`.50` / GW `.1`).
 3. Tab Radio: elige **IP del radio** (Auto = 1.20 → 172.1 → 20.1; o fija 192.168.172.1 si estás en su WiFi) → **1 Detectar** → elige pass SSH → elige Zona/AP → **3 Subir config**. O Reset si es necesario.
 4. Conecta al router: Nuevo → únete a su WiFi de fábrica → **Conectar 192.168.0.1** → SSID+clave → **Aprovisionar**. Existente → WiFi del cliente → **Conectar .20.2** → nueva clave → reboot.
+5. Tab **Brújula** (apuntar antena): permite cámara + ubicación → **Nodos** → `+` para cargar uno a mano (nombre, lat, lng) o ☁ para bajarlos de `GET /nodes` → elige el nodo → gira el teléfono hasta que el marcador quede centrado (Δ ≤ 3° en verde). Sin GPS toca **Posición** y escribe tus coordenadas; sin cámara se ve la mira de brújula con flecha ámbar.
 
 ## 6. Arquitectura limpia (30 años, sin atajos)
 
@@ -93,7 +96,9 @@ lib/
   features/radio_ubiquiti/  domain/entities + repositories / data/ubnt_repository_impl / presentation/ubnt_page
   features/router_tplink/   domain/entities / data/tplink_repository_impl / presentation/tplink_page
   features/inventory/       domain + data/inventory_local (sqflite) + presentation/zones_page
+  features/ar_compass/      domain/geo (rumbo+distancia puros) + data/ar_node_store (sqflite) + presentation/ar_page
 test/ubnt_template_test.dart  # regla CHANGESSID/WAN/GW
+test/geo_test.dart            # rumbo desde acelerómetro+magnetómetro
 ```
 
 Principios: una sola responsabilidad por clase, repositorios con contrato testeable, UI tonta (solo llama casos de uso), sin credenciales hardcodeadas fuera de `AppConfig`, offline-first con nube como plugin.
