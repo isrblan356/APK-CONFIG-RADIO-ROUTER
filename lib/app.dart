@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'features/admin/presentation/admin_page.dart';
 import 'features/ar_compass/presentation/ar_page.dart';
 import 'features/history/presentation/history_page.dart';
 import 'features/radio_ubiquiti/presentation/ubnt_page.dart';
@@ -28,7 +29,14 @@ class _HomeTabsState extends ConsumerState<HomeTabs> {
   int i = 0;
   @override
   Widget build(BuildContext context) {
-    const pages = [ZonesPage(), UbntPage(), TplinkPage(), ArPage(), HistoryPage()];
+    const pages = [
+      ZonesPage(),
+      UbntPage(),
+      TplinkPage(),
+      ArPage(),
+      HistoryPage(),
+      AdminPage(),
+    ];
     return Scaffold(
       body: pages[i],
       bottomNavigationBar: NavigationBar(
@@ -40,6 +48,8 @@ class _HomeTabsState extends ConsumerState<HomeTabs> {
           NavigationDestination(icon: Icon(Icons.router), label: 'Router'),
           NavigationDestination(icon: Icon(Icons.explore), label: 'Brújula'),
           NavigationDestination(icon: Icon(Icons.history), label: 'Historial'),
+          NavigationDestination(
+              icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
         ],
       ),
     );
