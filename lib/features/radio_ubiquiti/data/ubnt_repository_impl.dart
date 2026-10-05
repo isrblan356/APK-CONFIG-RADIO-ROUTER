@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:dartssh2/dartssh2.dart';
 import 'package:dartz/dartz.dart';
@@ -143,6 +144,70 @@ class UbntRepositoryImpl implements UbntRepository {
     } catch (e) {
       return Left(DeviceFailure('Error identificando radio: $e'));
     }
+  }
+
+  @override
+  Future<Either<Failure, String>> diagnose({String? ip}) async {
+    final target = (ip == null || ip.isEmpty)
+        ? AppSettings.instance.ubntWifiIp
+        : ip;
+    final b = StringBuffer('Diagnóstico de red hacia $target\n');
+
+    // 1) ¿Tiene el móvil IP? (si no, nada va a funcionar)
+    try {
+      final ifs = await NetworkInterface.list(
+          includeLoopback: false, type: InternetAddressType.IPv4);
+      if (ifs.isEmpty) {
+        b.writeln('- El móvil NO tiene ninguna IP: reconecta el WiFi '
+            '(sin IP no hay ruta al radio).');
+      }
+      for (final i in ifs) {
+        for (final a in i.addresses) {
+          b.writeln('- Interfaz ${i.name}: ${a.address}');
+        }
+      }
+    } catch (e) {
+      b.writeln('- No se pudieron leer las interfaces: $e');
+    }
+
+    // 2) puertos del equipo
+    final p22 = await reachability.isTcpOpen(target, 22,
+        timeout: const Duration(seconds: 3));
+    final p80 = await reachability.isTcpOpen(target, 80,
+        timeout: const Duration(seconds: 3));
+    b.writeln('- Puerto 22 (SSH): ${p22 ? 'ABIERTO' : 'cerrado'}');
+    b.writeln('- Puerto 80 (HTTP): ${p80 ? 'ABIERTO' : 'cerrado'}');
+
+    // 3) si el 80 abre, un GET para confirmar que es equipo de verdad
+    if (p80) {
+      try {
+        final c = HttpClient()..connectionTimeout = const Duration(seconds: 3);
+        final req = await c.getUrl(Uri.parse('http://$target/'));
+        final res =
+            await req.close().timeout(const Duration(seconds: 4));
+        b.writeln('- HTTP / -> ${res.statusCode} '
+            '(200 o 401 = equipo vivo y hablando)');
+        await res.drain<void>();
+        c.close(force: true);
+      } catch (e) {
+        b.writeln('- HTTP / -> sin respuesta ($e)');
+      }
+    }
+
+    // 4) conclusión accionable
+    if (!p22 && !p80) {
+      b.writeln('Conclusión: $target no responde en absoluto. '
+          'Revisa que el móvil tenga IP 192.168.172.x y que el WiFi al que '
+          'te conectaste sea el del radio (no el de tu casa).');
+    } else if (!p22 && p80) {
+      b.writeln('Conclusión: el equipo responde pero el SSH está CERRADO. '
+          'En AirOS: System -> Services -> SSH Server = Enabled, y vuelve a '
+          'probar 1. Detectar.');
+    } else {
+      b.writeln('Conclusión: hay camino al equipo. Dale a 1. Detectar y '
+          'revisa el log (clave que usa, modelo y firmware).');
+    }
+    return Right(b.toString());
   }
 
   /// Genera system.cfg aplicando los 3 reemplazos de final.php.

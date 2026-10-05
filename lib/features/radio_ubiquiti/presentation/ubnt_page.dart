@@ -129,6 +129,22 @@ class _UbntPageState extends ConsumerState<UbntPage> {
             label: const Text('1. Detectar radio'),
           ),
           ElevatedButton.icon(
+            onPressed: busy
+                ? null
+                : () async {
+                    setState(() {
+                      busy = true;
+                      log = '';
+                    });
+                    final r = await ubnt.diagnose(
+                        ip: ipChoice == 'auto' ? null : ipChoice);
+                    addLog(r.fold((f) => 'ERROR: ${f.message}', (txt) => txt));
+                    setState(() => busy = false);
+                  },
+            icon: const Icon(Icons.network_check),
+            label: const Text('Diagnosticar'),
+          ),
+          ElevatedButton.icon(
             onPressed: (busy || radio == null)
                 ? null
                 : () async {

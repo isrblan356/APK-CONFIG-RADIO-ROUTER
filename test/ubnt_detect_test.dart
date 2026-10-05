@@ -48,4 +48,20 @@ void main() {
     expect(res.isLeft(), true);
     expect(reach.probed, ['192.168.172.1']);
   });
+
+  test('diagnóstico: reporta puertos y conclusión sin lanzar', () async {
+    final reach = RecordingReachability(); // alive=false: nada abierto
+    final repo = UbntRepositoryImpl(reach, MockInventory());
+
+    final res = await repo.diagnose(ip: '192.168.172.1');
+
+    expect(res.isRight(), true);
+    final txt = res.getOrElse(() => '');
+    expect(txt, contains('192.168.172.1'));
+    expect(txt, contains('Puerto 22 (SSH):'));
+    expect(txt, contains('Puerto 80 (HTTP):'));
+    expect(txt, contains('Conclusión:'));
+    // Sin equipo: el log debe mandar a revisar el WiFi/IP.
+    expect(txt, contains('no responde en absoluto'));
+  });
 }

@@ -13,6 +13,11 @@ abstract class UbntRepository {
   Future<Either<Failure, UbntRadio>> detectAndIdentify(
       {String? ip, void Function(String)? onLog});
 
+  /// Diagnóstico de campo en texto: IP local del móvil + puertos 22/80 y
+  /// HTTP hacia [ip] (por defecto la IP del WiFi del radio). No configura
+  /// nada: solo dice por qué no se detecta.
+  Future<Either<Failure, String>> diagnose({String? ip});
+
   /// Sube firmware si la versión no coincide (port ubnt_update_firmware).
   Future<Either<Failure, void>> updateFirmwareIfNeeded(UbntRadio radio, String sshPass, void Function(String) onLog);
 
