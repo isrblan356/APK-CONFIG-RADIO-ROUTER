@@ -16,8 +16,7 @@ class UbntRadio extends Equatable {
     this.lanSpeedDuplex = '',
   });
 
-  bool get needsFirmwareUpdate =>
-      isAc ? firmware != 'v8.7.4' : firmware != 'v6.3.2';
+  bool needsFirmwareUpdate(String fwTarget) => firmware != fwTarget;
 
   @override
   List<Object> get props => [ip, model, firmware, isAc, lanSpeedDuplex];
@@ -30,17 +29,29 @@ class UbntProvisionParams extends Equatable {
   final String sshPass;
   final String ssid; // SSID del AP elegido
   final String network; // ej: "192.168.80." (columna zona.network)
+  // Sufijos del "network 50" de final.php (editables desde Admin).
+  final String wanSuffix;
+  final String gwSuffix;
   const UbntProvisionParams({
     required this.radioIp,
     required this.ssid,
     required this.network,
     this.sshUser = 'ubnt',
     this.sshPass = 'ubnt',
+    this.wanSuffix = '50',
+    this.gwSuffix = '1',
   });
 
-  String get newWan => '${network}50'; // igual que final.php: $newnetwork.'50'
-  String get newGateway => '${network}1';
+  String get newWan => _join(network, wanSuffix); // final.php: $newnetwork.'50'
+  String get newGateway => _join(network, gwSuffix);
+
+  static String _join(String base, String suffix) {
+    final b = base.trim();
+    if (b.isEmpty) return suffix;
+    return b.endsWith('.') ? '$b$suffix' : '$b.$suffix';
+  }
 
   @override
-  List<Object> get props => [radioIp, sshUser, sshPass, ssid, network];
+  List<Object?> get props =>
+      [radioIp, sshUser, sshPass, ssid, network, wanSuffix, gwSuffix];
 }

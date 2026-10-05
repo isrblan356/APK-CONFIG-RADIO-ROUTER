@@ -21,9 +21,12 @@ class InventoryLocal implements InventoryRepository {
 
   final http.Client cloud;
   final bool cloudEnabled;
+  final String endpoint;
   Database? _db;
 
-  InventoryLocal(this.cloud, {this.cloudEnabled = AppConfig.cloudEnabledDefault});
+  InventoryLocal(this.cloud,
+      {this.cloudEnabled = AppConfig.cloudEnabledDefault, String? endpoint})
+      : endpoint = endpoint ?? AppConfig.cloudEndpoint;
 
   Future<void> _installSeed(String path) async {
     if (await File(path).exists()) return;
@@ -136,10 +139,10 @@ class InventoryLocal implements InventoryRepository {
 
   @override
   Future<Either<Failure, void>> syncFromCloud() async {
-    if (!cloudEnabled || AppConfig.cloudEndpoint.isEmpty) {
+    if (!cloudEnabled || endpoint.isEmpty) {
       return const Right(null); // 100% local, nada que hacer
     }
-    final ep = AppConfig.cloudEndpoint.replaceAll(RegExp(r'/+$'), '');
+    final ep = endpoint.replaceAll(RegExp(r'/+$'), '');
     try {
       final zRes = await cloud.get(Uri.parse('$ep/zones'));
       if (zRes.statusCode != 200) {

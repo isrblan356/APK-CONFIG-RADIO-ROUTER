@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:dartz/dartz.dart';
 import 'package:http/http.dart' as http;
-import '../../../core/config/app_config.dart';
+import '../../../core/config/app_settings.dart';
 import '../../../core/error/failures.dart';
 import '../domain/entities/tplink.dart';
 import '../domain/tplink_crypto.dart';
@@ -107,8 +107,12 @@ class TplinkRepositoryImpl implements TplinkRepository {
   @override
   Future<Either<Failure, TplinkInfo>> connect({required bool isNewRouter}) async {
     try {
-      final ip = isNewRouter ? AppConfig.tplinkNewIp : AppConfig.tplinkConfiguredIp;
-      final pass = isNewRouter ? AppConfig.tplinkNewPass : AppConfig.tplinkConfiguredPass;
+      final ip = isNewRouter
+          ? AppSettings.instance.tplinkNewIp
+          : AppSettings.instance.tplinkConfiguredIp;
+      final pass = isNewRouter
+          ? AppSettings.instance.tplinkNewPass
+          : AppSettings.instance.tplinkConfiguredPass;
       final cookie = _authCookie(pass);
       final key = await _loginKey(ip, cookie);
 
@@ -132,8 +136,9 @@ class TplinkRepositoryImpl implements TplinkRepository {
       if (rOld.body.contains('System Up Time')) {
         return Right(_parseStatus(ip, TplinkGen.old, '', rOld.body));
       }
-      return const Left(ConnectionFailure(
-          'No se conectó al TP-Link. Verifica IP (192.168.0.1 nuevo / 192.168.20.2 configurado) y que el móvil esté en su WiFi.'));
+      return Left(ConnectionFailure(
+          'No se conectó al TP-Link. Verifica IP (${AppSettings.instance.tplinkNewIp} nuevo / '
+          '${AppSettings.instance.tplinkConfiguredIp} configurado) y que el móvil esté en su WiFi.'));
     } catch (e) {
       return Left(DeviceFailure('Error conectando TP-Link: $e'));
     }
@@ -157,24 +162,30 @@ class TplinkRepositoryImpl implements TplinkRepository {
       if (p.wifiPass.length < 8) {
         return const Left(ValidationFailure('La clave WiFi debe tener 8+ caracteres.'));
       }
-      // Pass actual de sesión: si es IP nueva es admin, si no r1nku2015.
-      final sessionPass = s.ip == AppConfig.tplinkNewIp
-          ? AppConfig.tplinkNewPass
-          : AppConfig.tplinkConfiguredPass;
+      // Pass actual de sesión: si es IP nueva es admin, si no la configurada.
+      final sessionPass = s.ip == AppSettings.instance.tplinkNewIp
+          ? AppSettings.instance.tplinkNewPass
+          : AppSettings.instance.tplinkConfiguredPass;
+      // Pass con la que queda el router al terminar (editable en Admin).
+      final np = AppSettings.instance.tplinkConfiguredPass;
+      final npEnc = Uri.encodeComponent(base64.encode(utf8.encode(np)));
+      final adminEnc = Uri.encodeComponent(base64.encode(utf8.encode('admin')));
 
       // 1) Cambiar password admin (port líneas 254-260 de 2new.sh)
       log('Cambiando password admin...');
       if (s.gen == TplinkGen.old) {
         await _getWithSession(s, sessionPass,
-            '/userRpm/ChangeLoginPwdRpm.htm?oldname=admin&oldpassword=admin&newname=admin&newpassword=r1nku2015&newpassword2=r1nku2015&Save=Save');
+            '/userRpm/ChangeLoginPwdRpm.htm?oldname=admin&oldpassword=admin'
+            '&newname=admin&newpassword=$np&newpassword2=$np&Save=Save');
       } else {
-        // Hashes precalculados que usa el firmware nuevo (ver AppConfig).
+        // Hashes en base64 que espera el firmware nuevo (admin -> actual).
         await _getWithSession(s, sessionPass,
-            '/userRpm/ChangeLoginPwdRpm.htm?oldname=admin&oldpassword=MjEyMzJmMjk3YTU3YTVhNzQzODk0YTBlNGE4MDFmYzM%3D&newname=admin&newpassword=NTdhMjk4YTk0MGU3NzEzZWI2MDZjM2IwZDc3YTQ2MGE%3D&newpassword2=NTdhMjk4YTk0MGU3NzEzZWI2MDZjM2IwZDc3YTQ2MGE%3D&Save=Save');
+            '/userRpm/ChangeLoginPwdRpm.htm?oldname=admin&oldpassword=$adminEnc'
+            '&newname=admin&newpassword=$npEnc&newpassword2=$npEnc&Save=Save');
       }
 
-      // A partir de aquí el pass es r1nku2015. Reconstruimos sesión con nueva KEY.
-      final newCookie = _authCookie(AppConfig.tplinkConfiguredPass);
+      // A partir de aquí el pass es np. Reconstruimos sesión con nueva KEY.
+      final newCookie = _authCookie(np);
       var newKey = s.key;
       if (s.gen == TplinkGen.modern) {
         newKey = await _loginKey(s.ip, newCookie);
@@ -183,7 +194,6 @@ class TplinkRepositoryImpl implements TplinkRepository {
       final ns = TplinkInfo(
           ip: s.ip, gen: s.gen, key: newKey,
           hw: s.hw, fw: s.fw, lanIp: s.lanIp, ssid: s.ssid, wanMac: s.wanMac);
-      const np = 'r1nku2015';
       final ssidEnc = Uri.encodeComponent(p.ssid);
       final passEnc = Uri.encodeComponent(p.wifiPass);
 
@@ -205,10 +215,10 @@ class TplinkRepositoryImpl implements TplinkRepository {
           '/userRpm/WlanNetworkRpm.htm?ssid1=$ssidEnc&ssid2=TP-LINK_GUEST_DBC6&ssid3=TP-LINK_DBC6_3&ssid4=TP-LINK_DBC6_4&region=101&band=0&mode=5&chanWidth=1&channel=1&rate=59&ap=1&broadcast=2&brlssid=&brlbssid=&addrType=1&keytype=1&wepindex=1&authtype=1&keytext=&Save=Save');
       await call('Clave WiFi...',
           '/userRpm/WlanSecurityRpm.htm?secType=3&pskSecOpt=2&pskCipher=3&pskSecret=$passEnc&interval=0&wpaSecOpt=3&wpaCipher=1&intervalWpa=0&wepSecOpt=3&keytype=1&keynum=1&key1=&length1=0&key2=&length2=0&key3=&length3=0&key4=&length4=0&Save=Save');
-      await call('LAN -> ${AppConfig.tplinkTargetLanIp} (reinicia el router)...',
-          '/userRpm/NetworkCfgRpm.htm?lantype=0&lanip=${AppConfig.tplinkTargetLanIp}&lanmask=2&inputMask=255.255.255.0&langw=0.0.0.0&igmpEn=0&Save=Save&igmpChanged=0');
+      await call('LAN -> ${AppSettings.instance.tplinkTargetLanIp} (reinicia el router)...',
+          '/userRpm/NetworkCfgRpm.htm?lantype=0&lanip=${AppSettings.instance.tplinkTargetLanIp}&lanmask=2&inputMask=255.255.255.0&langw=0.0.0.0&igmpEn=0&Save=Save&igmpChanged=0');
 
-      log('Listo. El router reiniciará y quedará en ${AppConfig.tplinkTargetLanIp}.');
+      log('Listo. El router reiniciará y quedará en ${AppSettings.instance.tplinkTargetLanIp}.');
       return const Right(null);
     } catch (e) {
       return Left(DeviceFailure('Error aprovisionando TP-Link: $e'));
@@ -222,9 +232,9 @@ class TplinkRepositoryImpl implements TplinkRepository {
       if (newPass.length < 8) {
         return const Left(ValidationFailure('La clave debe tener 8+ caracteres.'));
       }
-      final sessionPass = s.ip == AppConfig.tplinkNewIp
-          ? AppConfig.tplinkNewPass
-          : AppConfig.tplinkConfiguredPass;
+      final sessionPass = s.ip == AppSettings.instance.tplinkNewIp
+          ? AppSettings.instance.tplinkNewPass
+          : AppSettings.instance.tplinkConfiguredPass;
       final enc = Uri.encodeComponent(newPass);
       log('Cambiando clave de "${s.ssid}"...');
       await _get(s, sessionPass,
@@ -237,9 +247,9 @@ class TplinkRepositoryImpl implements TplinkRepository {
     }
   }
 
-  String _sessionPass(TplinkInfo s) => s.ip == AppConfig.tplinkNewIp
-      ? AppConfig.tplinkNewPass
-      : AppConfig.tplinkConfiguredPass;
+  String _sessionPass(TplinkInfo s) => s.ip == AppSettings.instance.tplinkNewIp
+      ? AppSettings.instance.tplinkNewPass
+      : AppSettings.instance.tplinkConfiguredPass;
 
   @override
   Future<Either<Failure, String>> downloadDecodedConfig(TplinkInfo s) async {

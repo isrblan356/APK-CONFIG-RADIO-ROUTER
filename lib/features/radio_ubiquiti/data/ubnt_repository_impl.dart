@@ -5,6 +5,7 @@ import 'package:dartssh2/dartssh2.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../../../core/config/app_config.dart';
+import '../../../core/config/app_settings.dart';
 import '../../../core/error/failures.dart';
 import '../../../core/network/reachability.dart';
 import '../../inventory/domain/inventory_repository.dart';
@@ -94,8 +95,8 @@ class UbntRepositoryImpl implements UbntRepository {
 
   Future<(UbntRadio, String workingPass)?> _detect(String ip) async {
     if (!await reachability.isUbntAlive(ip)) return null;
-    for (final pass in AppConfig.ubntKnownPasses) {
-      final c = await _connect(ip, AppConfig.ubntDefaultUser, pass);
+    for (final pass in AppSettings.instance.ubntPasses) {
+      final c = await _connect(ip, AppSettings.instance.ubntUser, pass);
       if (c == null) continue;
       try {
         final raw = await _exec(c, '/usr/www/status.cgi');
@@ -114,7 +115,7 @@ class UbntRepositoryImpl implements UbntRepository {
     try {
       // Sin IP explícita: fábrica -> WiFi del radio (172.1) -> configurada.
       final targets = (ip == null || ip.isEmpty)
-          ? AppConfig.ubntCandidateIps
+          ? AppSettings.instance.ubntCandidateIps
           : <String>[ip];
       for (final t in targets) {
         final found = await _detect(t);
@@ -159,7 +160,7 @@ class UbntRepositoryImpl implements UbntRepository {
   Future<Either<Failure, void>> updateFirmwareIfNeeded(
       UbntRadio radio, String sshPass, void Function(String) onLog) async {
     try {
-      final target = radio.isAc ? AppConfig.fwAC : AppConfig.fwM;
+      final target = AppSettings.instance.fwTarget(radio.isAc);
       if (radio.firmware == target) {
         onLog('Firmware ya en $target, se omite subida.');
         return const Right(null);
@@ -176,7 +177,8 @@ class UbntRepositoryImpl implements UbntRepository {
         return Left(DeviceFailure(
             'Falta $fwAsset en la APK. Copia Firmware/${radio.model}/fwupdate.bin a assets/firmware/'));
       }
-      final client = await _connect(radio.ip, AppConfig.ubntDefaultUser, sshPass);
+      final client = await _connect(
+          radio.ip, AppSettings.instance.ubntUser, sshPass);
       if (client == null) {
         return const Left(AuthFailure('No se pudo conectar por SSH para firmware.'));
       }
@@ -245,7 +247,7 @@ class UbntRepositoryImpl implements UbntRepository {
 
         await _exec(client, 'cfgmtd -w -p /etc/');
         await _exec(client, 'reboot');
-        onLog('Config aplicada, reiniciando... espera a ${AppConfig.ubntConfiguredIp}');
+        onLog('Config aplicada, reiniciando... espera a ${AppSettings.instance.ubntConfiguredIp}');
       } finally {
         client.close();
       }
@@ -259,7 +261,7 @@ class UbntRepositoryImpl implements UbntRepository {
   Future<Either<Failure, void>> factoryReset(String ip, String sshPass) async {
     try {
       final client =
-          await _connect(ip, AppConfig.ubntDefaultUser, sshPass);
+          await _connect(ip, AppSettings.instance.ubntUser, sshPass);
       if (client == null) return const Left(AuthFailure('SSH falló para reset.'));
       try {
         // Port de ubnt_reset_defaults()

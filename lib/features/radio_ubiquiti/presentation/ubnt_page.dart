@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/config/app_config.dart';
+import '../../../core/config/app_settings.dart';
 import '../../../core/di/providers.dart';
 import '../../inventory/domain/entities.dart';
 import '../domain/entities/ubnt_radio.dart';
@@ -111,9 +111,9 @@ class _UbntPageState extends ConsumerState<UbntPage> {
                         setState(() => radio = rad);
                         addLog(
                             'OK (${rad.model}) FW:${rad.firmware} IP:${rad.ip} LAN:${rad.lanSpeedDuplex}');
-                        if (rad.needsFirmwareUpdate) {
-                          addLog(
-                              'Aviso: firmware distinto al objetivo (${rad.isAc ? 'v8.7.4' : 'v6.3.2'})');
+                        final fwObj = AppSettings.instance.fwTarget(rad.isAc);
+                        if (rad.needsFirmwareUpdate(fwObj)) {
+                          addLog('Aviso: firmware distinto al objetivo ($fwObj)');
                         }
                       },
                     );
@@ -140,18 +140,20 @@ class _UbntPageState extends ConsumerState<UbntPage> {
           // (value: quedó deprecado en Flutter 3.33+).
           key: ValueKey('ip-$ipChoice'),
           initialValue: ipChoice,
-          items: const [
+          items: [
+            const DropdownMenuItem(
+                value: 'auto', child: Text('Auto (fábrica → WiFi → config.)')),
             DropdownMenuItem(
-                value: 'auto', child: Text('Auto (1.20 → 172.1 → 20.1)')),
+                value: AppSettings.instance.ubntWifiIp,
+                child: Text(
+                    '${AppSettings.instance.ubntWifiIp} (WiFi del radio)')),
             DropdownMenuItem(
-                value: AppConfig.ubntWifiIp,
-                child: Text('${AppConfig.ubntWifiIp} (WiFi del radio)')),
+                value: AppSettings.instance.ubntDefaultIp,
+                child: Text('${AppSettings.instance.ubntDefaultIp} (fábrica)')),
             DropdownMenuItem(
-                value: AppConfig.ubntDefaultIp,
-                child: Text('${AppConfig.ubntDefaultIp} (fábrica)')),
-            DropdownMenuItem(
-                value: AppConfig.ubntConfiguredIp,
-                child: Text('${AppConfig.ubntConfiguredIp} (ya configurada)')),
+                value: AppSettings.instance.ubntConfiguredIp,
+                child: Text(
+                    '${AppSettings.instance.ubntConfiguredIp} (ya configurada)')),
           ],
           onChanged: (v) => setState(() => ipChoice = v ?? 'auto'),
           decoration: const InputDecoration(labelText: 'IP del radio (destino)'),
@@ -159,10 +161,11 @@ class _UbntPageState extends ConsumerState<UbntPage> {
         DropdownButtonFormField<String>(
           key: ValueKey('ssh-$sshPass'),
           initialValue: sshPass,
-          items: const ['ubnt', 'r1nku.2015', 'R1nku.2015']
+          items: AppSettings.instance.ubntPasses
               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
-          onChanged: (v) => setState(() => sshPass = v ?? 'ubnt'),
+          onChanged: (v) =>
+              setState(() => sshPass = v ?? AppSettings.instance.ubntUser),
           decoration: const InputDecoration(labelText: 'Clave SSH (prueba en orden)'),
         ),
         const Divider(),
@@ -219,6 +222,8 @@ class _UbntPageState extends ConsumerState<UbntPage> {
                           ssid: ap!.ssid,
                           network: zone!.network,
                           sshPass: sshPass,
+                          wanSuffix: AppSettings.instance.wanSuffix,
+                          gwSuffix: AppSettings.instance.gwSuffix,
                         ),
                         addLog,
                       );
@@ -228,7 +233,8 @@ class _UbntPageState extends ConsumerState<UbntPage> {
                       );
                       await hist.add(
                           'ubnt',
-                          'radio ${radio!.ip} ${radio!.model} -> ${ap!.ssid} ${zone!.network}50',
+                          'radio ${radio!.ip} ${radio!.model} -> ${ap!.ssid} '
+                          '${AppSettings.instance.wanIp(zone!.network)}',
                           res.isRight());
                       setState(() => busy = false);
                     },

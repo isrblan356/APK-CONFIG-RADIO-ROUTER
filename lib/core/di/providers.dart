@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import '../config/app_settings.dart';
 import '../network/reachability.dart';
 import '../../features/radio_ubiquiti/data/ubnt_repository_impl.dart';
 import '../../features/radio_ubiquiti/domain/repositories/ubnt_repository.dart';
@@ -13,8 +14,11 @@ import '../../features/history/domain/history_repository.dart';
 // DI centralizada. Las páginas importan SOLO este archivo (nunca main.dart).
 final httpClientProvider = Provider<http.Client>((ref) => http.Client());
 final reachabilityProvider = Provider<Reachability>((ref) => ReachabilityImpl());
-final inventoryProvider =
-    Provider<InventoryRepository>((ref) => InventoryLocal(ref.watch(httpClientProvider)));
+final inventoryProvider = Provider<InventoryRepository>((ref) => InventoryLocal(
+      ref.watch(httpClientProvider),
+      cloudEnabled: AppSettings.instance.cloudEnabled,
+      endpoint: AppSettings.instance.cloudEndpoint,
+    ));
 final ubntRepoProvider = Provider<UbntRepository>((ref) =>
     UbntRepositoryImpl(ref.watch(reachabilityProvider), ref.watch(inventoryProvider)));
 final tplinkRepoProvider =
@@ -22,5 +26,8 @@ final tplinkRepoProvider =
 final historyProvider =
     Provider<HistoryRepository>((ref) => HistoryRepositoryImpl());
 // Nodos con coordenadas para apuntar la antena (AR / brújula).
-final arNodeStoreProvider = Provider<ArNodeStore>(
-    (ref) => ArNodeStore(ref.watch(httpClientProvider)));
+final arNodeStoreProvider = Provider<ArNodeStore>((ref) => ArNodeStore(
+      ref.watch(httpClientProvider),
+      cloudEnabled: AppSettings.instance.cloudEnabled,
+      endpoint: AppSettings.instance.cloudEndpoint,
+    ));
