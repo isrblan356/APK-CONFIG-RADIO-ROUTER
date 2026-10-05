@@ -1,0 +1,8 @@
+# Para hosting Apache (subcarpeta /api o raíz):
+# activa AllowOverride All y sube la carpeta server/ tal cual.
+DirectoryIndex index.php
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]
