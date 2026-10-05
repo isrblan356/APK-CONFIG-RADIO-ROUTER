@@ -30,4 +30,5 @@ final arNodeStoreProvider = Provider<ArNodeStore>((ref) => ArNodeStore(
       ref.watch(httpClientProvider),
       cloudEnabled: AppSettings.instance.cloudEnabled,
       endpoint: AppSettings.instance.cloudEndpoint,
+      token: AppSettings.instance.cloudToken,
     ));

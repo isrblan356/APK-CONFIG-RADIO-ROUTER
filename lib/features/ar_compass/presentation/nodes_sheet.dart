@@ -95,6 +95,18 @@ class _NodesSheetState extends State<NodesSheet> {
     widget.onChanged();
   }
 
+  Future<void> _push() async {
+    setState(() => _busy = true);
+    final r = await widget.store.pushToCloud();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _msg = r.fold((f) => f.message, (ok) => ok);
+    });
+    await _load();
+    widget.onChanged();
+  }
+
   Future<void> _add() async {
     final created = await showDialog<ArNode>(
       context: context,
@@ -170,8 +182,13 @@ class _NodesSheetState extends State<NodesSheet> {
                 onPressed: _busy ? null : _add,
               ),
               IconButton(
+                tooltip: 'Subir nodos manuales',
+                icon: const Icon(Icons.cloud_upload),
+                onPressed: _busy ? null : _push,
+              ),
+              IconButton(
                 tooltip: 'Sincronizar con la nube',
-                icon: const Icon(Icons.cloud_sync),
+                icon: const Icon(Icons.cloud_download),
                 onPressed: _busy ? null : _sync,
               ),
             ]),

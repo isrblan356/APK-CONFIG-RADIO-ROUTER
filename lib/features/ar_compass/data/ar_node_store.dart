@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dartz/dartz.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
@@ -17,6 +19,8 @@ class ArNodeStore {
   final http.Client cloud;
   final bool cloudEnabled;
   final String endpoint;
+  /// X-Admin-Token para escribir en el servidor (vacío = sin token).
+  final String token;
   final DatabaseFactory? factory;
   final String? dbPath;
 
@@ -26,6 +30,7 @@ class ArNodeStore {
     this.cloud, {
     this.cloudEnabled = AppConfig.cloudEnabledDefault,
     String? endpoint,
+    this.token = '',
     this.factory,
     this.dbPath,
   }) : endpoint = endpoint ?? AppConfig.cloudEndpoint;
@@ -109,7 +114,20 @@ class ArNodeStore {
         return const Right('Nube sin nodos válidos: no se modificó nada.');
       }
       final local = await list();
-      final plan = ArNodeSync.plan(local, nube);
+      // Los que subí yo (manual + remoto_id) no deben volver como "nube":
+      // el servidor los devuelve porque los creó, pero aquí ya existen.
+      final mios = local
+          .where((n) => n.origen == 'manual' && n.remotoId != null)
+          .map((n) => n.remotoId)
+          .toSet();
+      final nuevos = nube
+          .where((n) => n.remotoId == null || !mios.contains(n.remotoId))
+          .toList();
+      if (nuevos.isEmpty) {
+        return const Right(
+            'Los nodos de la nube ya están en el móvil: nada que bajar.');
+      }
+      final plan = ArNodeSync.plan(local, nuevos);
       final db = await _open();
       await db.transaction((txn) async {
         await txn.delete('ar_nodes', where: "origen = 'nube'");
@@ -127,10 +145,65 @@ class ArNodeStore {
       });
       final manuales =
           plan.conservar.where((n) => n.origen == 'manual').length;
-      return Right('${nube.length} nodos desde la nube '
+      return Right('${nuevos.length} nodos desde la nube '
           '($manuales manuales conservados)');
     } catch (e) {
       return Left(ConnectionFailure('Sync nube falló (sigo offline): $e'));
     }
+  }
+
+  /// Sube los nodos manuales con clave estable `d<local_id>` (el servidor hace
+  /// upsert, así que repetir no duplica) y guarda el id que devuelve.
+  Future<Either<Failure, String>> pushToCloud() async {
+    if (!cloudEnabled || endpoint.isEmpty) {
+      return const Right('Nube no configurada: nada subió.');
+    }
+    final ep = endpoint.replaceAll(RegExp(r'/+$'), '');
+    final db = await _open();
+    final rows =
+        await db.query('ar_nodes', where: "origen = 'manual'", orderBy: 'local_id');
+    if (rows.isEmpty) return const Right('No hay nodos manuales para subir.');
+
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      if (token.isNotEmpty) 'X-Admin-Token': token,
+    };
+    var ok = 0;
+    for (final r in rows) {
+      final body = jsonEncode({
+        'clave': 'd${r['local_id']}',
+        'nombre': r['nombre'],
+        'lat': r['lat'],
+        'lng': r['lng'],
+        'alt': r['alt'],
+        'zona': r['zona'] ?? '',
+      });
+      try {
+        final res = await cloud.post(Uri.parse('$ep/nodes'),
+            headers: headers, body: body);
+        if (res.statusCode != 200 && res.statusCode != 201) {
+          return Left(ConnectionFailure(
+              'POST /nodes respondió ${res.statusCode}: ${res.body}'));
+        }
+        Object? decoded;
+        try {
+          decoded = jsonDecode(res.body);
+        } catch (_) {
+          decoded = null;
+        }
+        if (decoded is Map && decoded['id'] is num) {
+          await db.update(
+            'ar_nodes',
+            {'remoto_id': (decoded['id'] as num).toInt()},
+            where: 'local_id = ?',
+            whereArgs: [r['local_id']],
+          );
+        }
+        ok++;
+      } catch (e) {
+        return Left(ConnectionFailure('Subida falló tras $ok nodos: $e'));
+      }
+    }
+    return Right('$ok nodos subidos al servidor.');
   }
 }
