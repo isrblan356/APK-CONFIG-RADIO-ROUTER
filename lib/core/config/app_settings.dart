@@ -47,11 +47,20 @@ class AppSettings {
   String get ubntUser => _s('ubntUser', AppConfig.ubntDefaultUser);
 
   /// Claves SSH probadas en orden (se guardan separadas por coma).
+  /// Se limpian espacios y comillas para que " 'clave' " no falle.
   List<String> get ubntPasses {
     final raw = _s('ubntPasses', AppConfig.ubntKnownPasses.join(','));
     return raw
         .split(',')
-        .map((e) => e.trim())
+        .map((e) {
+          var v = e.trim();
+          while (v.length >= 2 &&
+              ((v.startsWith('"') && v.endsWith('"')) ||
+                  (v.startsWith("'") && v.endsWith("'")))) {
+            v = v.substring(1, v.length - 1).trim();
+          }
+          return v;
+        })
         .where((e) => e.isNotEmpty)
         .toList();
   }

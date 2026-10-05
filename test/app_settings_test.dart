@@ -66,6 +66,12 @@ void main() {
       expect(s.cloudToken, 't0k3n');
     });
 
+    test('las claves se limpian de espacios y comillas en el CSV', () async {
+      final s = AppSettings.instance;
+      await s.setUbntPasses([' " ubnt " ', "' r1nku.2015 '", '  ', 'clave']);
+      expect(s.ubntPasses, ['ubnt', 'r1nku.2015', 'clave']);
+    });
+
     test('resetConfig vuelve a fábrica pero conserva la contraseña admin', () async {
       final s = AppSettings.instance;
       await s.setWanSuffix('60');

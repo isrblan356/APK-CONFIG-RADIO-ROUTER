@@ -32,7 +32,9 @@ class UbntRepositoryImpl implements UbntRepository {
 
   // ---------- helpers SSH ----------
 
-  Future<SSHClient?> _connect(String ip, String user, String pass) async {
+  Future<SSHClient?> _connect(String ip, String user, String pass,
+      {void Function(String)? onLog}) async {
+    final log = onLog ?? ((_) {});
     for (var i = 1; i <= AppConfig.sshTries; i++) {
       try {
         final socket = await SSHSocket.connect(ip, 22,
@@ -41,10 +43,18 @@ class UbntRepositoryImpl implements UbntRepository {
           socket,
           username: user,
           onPasswordRequest: () => pass,
+          // AirOS a veces solo ofrece keyboard-interactive (misma clave).
+          onUserInfoRequest: (req) =>
+              List<String>.filled(req.prompts.length, pass),
         );
         await client.authenticated;
         return client;
-      } catch (_) {
+      } on SSHAuthError catch (e) {
+        // El servidor rechazó: repetir la misma clave no cambia nada.
+        log('$ip: servidor rechazó la autenticación ($e)');
+        return null;
+      } catch (e) {
+        log('$ip: intento $i/${AppConfig.sshTries}: $e');
         await Future.delayed(
             const Duration(seconds: AppConfig.sshTryWaitSec));
       }
@@ -103,9 +113,10 @@ class UbntRepositoryImpl implements UbntRepository {
     log('$ip: equipo responde, probando claves SSH...');
     for (final pass in AppSettings.instance.ubntPasses) {
       log('$ip: clave "$pass"...');
-      final c = await _connect(ip, AppSettings.instance.ubntUser, pass);
+      final c =
+          await _connect(ip, AppSettings.instance.ubntUser, pass, onLog: log);
       if (c == null) {
-        log('$ip: clave "$pass" no funcionó (¿SSH cerrado o clave?)');
+        log('$ip: clave "$pass" no sirvió (arriba está el motivo)');
         continue;
       }
       try {
@@ -128,6 +139,14 @@ class UbntRepositoryImpl implements UbntRepository {
       {String? ip, void Function(String)? onLog}) async {
     final log = onLog ?? ((_) {});
     try {
+      final passes = AppSettings.instance.ubntPasses;
+      if (passes.isEmpty) {
+        return const Left(ValidationFailure(
+            'No hay claves guardadas. Ve a Admin -> Radio y escribe al menos '
+            'una contraseña para probar.'));
+      }
+      log('Usuario SSH: "${AppSettings.instance.ubntUser}" · '
+          '${passes.length} clave(s) a probar');
       // Sin IP explícita: fábrica -> WiFi del radio (172.1) -> configurada.
       final targets = (ip == null || ip.isEmpty)
           ? AppSettings.instance.ubntCandidateIps
