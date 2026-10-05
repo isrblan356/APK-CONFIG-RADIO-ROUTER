@@ -45,6 +45,7 @@ class AdminAuth {
       if (pass.trim() != firstPass) return _fail();
       // Primer acceso: se obliga a elegir contraseña antes de entrar.
       await s.setAdminMustChange(true);
+      await s.setAdminFails(0);
       return null;
     }
     if (hash(pass) != s.adminHash) return _fail();
