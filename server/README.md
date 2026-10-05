@@ -5,26 +5,37 @@ Cero dependencias: solo PHP 8 con `pdo_sqlite`.
 
 ## 1. Instalar en otra PC (Windows)
 
-1. **PHP**: baja el zip *x64* de <https://windows.php.net/download/> (por ejemplo
-   `php-8.x.x-Win32-vs16-x64.zip`), descomprime en `C:\php`.
-2. **Extensiones**: edita `C:\php\php.ini` y descomenta/agrega:
-   ```ini
-   extension=pdo_sqlite
-   extension=sqlite3
-   extension=filter
-   ```
-3. **PATH**: agrega `C:\php` al PATH del sistema (o copia `php.exe` junto a
-   `server\iniciar.bat`, también funciona).
-4. **Copia la carpeta `server/` completa** a esa PC (USB, git, lo que sea).
-   La carpeta es autocontenida: `seed_data/nodos.db` trae tus 8 zonas y 259 APs.
-5. **Arranca**: doble clic en `server\iniciar.bat`.
-   - Si la BD no existe la siembra sola con tus 8 zonas + 259 APs.
-   - Deja la ventana abierta: es el servidor (`Ctrl+C` la detiene).
-6. **Firewall**: cuando Windows pregunte por `php.exe` → permite en *Red privada*.
-7. **Prueba** desde el navegador de esa PC: `http://127.0.0.1:8080/health` debe
-   responder `{"ok":true,...}`.
+**Una sola línea**: copia la carpeta del servidor a la PC destino (por ejemplo a
+`C:\Users\PC\Pictures\ISP-CONFIG-servidor`), abre PowerShell ahí y pega:
 
-Con esto basta: la PC queda sirviendo en `http://<IP-de-la-PC>:8080`.
+```powershell
+cd 'C:\Users\PC\Pictures\ISP-CONFIG-servidor'; .\instalar.bat
+```
+
+`instalar.bat` hace todo solo:
+
+1. Busca PHP (PATH, junto al archivo, o `%ProgramFiles%\PHP`); si no lo encuentra
+   lo instala con `winget` (PHP 8.3) — es portable, no toca el PHP del sistema.
+2. Crea `php-isp-config.ini` con `pdo_sqlite` + `sqlite3` activos.
+3. Siembra `data/isp.sqlite` con tus 8 zonas + 259 APs (solo la primera vez).
+4. Arranca el servidor en `0.0.0.0:8080` en una ventana **minimizada**
+   (`ISP CONFIG` — no la cierres, esa es la que sirve).
+5. **Abre el navegador** en el panel web `http://localhost:8080/admin`.
+
+**Panel web** (`/admin`): usuario `admin`, contraseña `admin` (cámbiala en
+*Ajustes*). Ahí ves los **nodos con coordenadas**, **APs por zona**, **zonas**,
+**firmware** y los **técnicos con su IP** (el buscador te dice si una IP está
+libre o quién la tiene). Si no entraras con `admin`, borra `data\isp.sqlite` y
+vuelve a ejecutar: se vuelve a sembrar con `admin`/`admin`.
+
+**Firewall**: cuando Windows pregunte por `php.exe` → permite en *Red privada*.
+
+**Detener**: cierra la ventana `ISP CONFIG` minimizada (o `Ctrl+C` ahí).
+
+**Sin winget**: baja el zip *x64* de <https://windows.php.net/download/>,
+descomprime en `C:\php` (o junto a este archivo) y vuelve a ejecutar
+`instalar.bat`; si prefieres a mano: `extension=pdo_sqlite` y `extension=sqlite3`
+en `php.ini` y arranca `iniciar.bat`.
 
 ## 2. Alternativa: en WSL / Linux
 
@@ -91,6 +102,13 @@ Admin → Nube → *Token de escritura*.
 | GET | `/nodes` | nodos con coordenadas |
 | POST/PUT | `/nodes` | crear/actualizar nodo (JSON) |
 | DELETE | `/nodes?id=1` | borrar nodo |
+| GET | `/stats` | conteos para el panel |
+| GET | `/session` · POST · DELETE | sesión del panel (`admin`/`admin`) |
+| POST | `/password` | cambiar contraseña (con sesión) |
+| GET/POST/PUT/DELETE | `/tecnicos` | técnicos con su IP (`?ip=` → ¿libre?) |
+| GET/POST/PUT/DELETE | `/firmware` | modelos/versiones de firmware |
+| POST/PUT/DELETE | `/zones` | administrar zonas |
+| GET | `/admin/` | panel web (HTML/JS/CSS) |
 
 Errores: `{"error":"..."}` con código HTTP; la APK nunca borra lo local si la
 respuesta no es `200` con datos válidos.

@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ISP CONFIG · Servidor</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="login">
+  <h1>ISP CONFIG <span class="muted">· Servidor</span></h1>
+  <p>Panel de administración (nodos, APs, firmware e IPs de técnicos).</p>
+  <form id="login-form" class="grid">
+    <div class="full">
+      <label>Usuario</label>
+      <input name="user" value="admin" autocomplete="username" required>
+    </div>
+    <div class="full">
+      <label>Contraseña</label>
+      <input name="pass" type="password" autocomplete="current-password" required>
+    </div>
+    <div class="full">
+      <button class="btn" type="submit">Entrar</button>
+    </div>
+  </form>
+  <p class="muted">Primera vez: <code>admin / admin</code> — cámbiala en Ajustes.</p>
+</div>
+
+<div id="app" hidden>
+  <header>
+    <div class="brand">ISP <span>CONFIG</span></div>
+    <nav id="tabs">
+      <button data-tab="stats" class="on">Resumen</button>
+      <button data-tab="nodes">Nodos</button>
+      <button data-tab="aps">APs</button>
+      <button data-tab="zones">Zonas</button>
+      <button data-tab="fw">Firmware</button>
+      <button data-tab="tec">Técnicos / IPs</button>
+      <button data-tab="set">Ajustes</button>
+    </nav>
+    <div class="right">
+      <span id="whoami">admin</span>
+      <button class="btn ghost" id="logout">Salir</button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============ RESUMEN ============ -->
+    <section id="tab-stats" class="card">
+      <h2>Resumen</h2>
+      <div class="stats" id="stats-box"></div>
+      <p class="hint">La APK apunta a este servidor con
+        <code>http://&lt;IP-de-esta-PC&gt;:8080</code> (Admin → Nube).</p>
+    </section>
+
+    <!-- ============ NODOS ============ -->
+    <section id="tab-nodes" class="card" hidden>
+      <h2>Nodos <span class="muted">(con coordenadas)</span></h2>
+      <p class="hint">Se sincronizan con la APK (pestaña Nodos → subir/bajar).
+        Los creados desde aquí quedan visibles en los mapas del móvil.</p>
+      <form class="grid" id="f-nodes">
+        <input type="hidden" name="id">
+        <div><label>Nombre *</label><input name="nombre" required></div>
+        <div><label>Latitud *</label><input name="lat" inputmode="decimal" placeholder="6.1234" required></div>
+        <div><label>Longitud *</label><input name="lng" inputmode="decimal" placeholder="-75.5678" required></div>
+        <div><label>Altitud (m)</label><input name="alt" inputmode="decimal"></div>
+        <div><label>Zona</label><select name="zona" id="nodes-zona"></select></div>
+        <div class="full"><label>Notas</label><input name="notas" placeholder="dirección, técnico, referencia..."></div>
+        <div class="full row">
+          <button class="btn" type="submit">Guardar</button>
+          <button class="btn ghost" type="button" data-reset="f-nodes">Nuevo</button>
+        </div>
+      </form>
+      <div class="row" style="margin:12px 0 6px">
+        <input id="nodes-q" placeholder="Buscar nodo..." style="max-width:260px">
+        <span class="muted" id="nodes-count"></span>
+      </div>
+      <table id="t-nodes">
+        <thead><tr><th>Nombre</th><th>Lat</th><th>Lng</th><th>Alt</th><th>Zona</th>
+          <th>Notas</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- ============ APS ============ -->
+    <section id="tab-aps" class="card" hidden>
+      <h2>Access Points</h2>
+      <p class="hint">Asignados a zona y nodo; la APK los lista en el paso 3 (Subir config).</p>
+      <form class="grid" id="f-aps">
+        <input type="hidden" name="id">
+        <div><label>Zona (idzona) *</label><select name="idzona" id="aps-zona"></select></div>
+        <div><label>id nodo</label><input name="idnodo" inputmode="numeric"></div>
+        <div><label>Nodo</label><input name="nodo"></div>
+        <div><label>SSID *</label><input name="ssid" required></div>
+        <div class="full row">
+          <button class="btn" type="submit">Guardar</button>
+          <button class="btn ghost" type="button" data-reset="f-aps">Nuevo</button>
+        </div>
+      </form>
+      <div class="row" style="margin:12px 0 6px">
+        <select id="aps-filter" style="max-width:260px"></select>
+        <span class="muted" id="aps-count"></span>
+      </div>
+      <table id="t-aps">
+        <thead><tr><th>Zona</th><th>id nodo</th><th>Nodo</th><th>SSID</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- ============ ZONAS ============ -->
+    <section id="tab-zones" class="card" hidden>
+      <h2>Zonas <span class="muted">(equivalente al menú a1 de final.php)</span></h2>
+      <p class="hint">El <code>network</code> se escribe con punto final: <code>192.168.80.</code>
+        — de ahí sale el "IP del técnico" (sufijo 50) y la IP final del equipo.</p>
+      <form class="grid" id="f-zones">
+        <input type="hidden" name="id">
+        <div><label>Zona *</label><input name="zona" placeholder="Girardota" required></div>
+        <div><label>Network *</label><input name="network" placeholder="192.168.80." required></div>
+        <div class="full row">
+          <button class="btn" type="submit">Guardar</button>
+          <button class="btn ghost" type="button" data-reset="f-zones">Nuevo</button>
+        </div>
+      </form>
+      <table id="t-zones" style="margin-top:12px">
+        <thead><tr><th>id</th><th>Zona</th><th>Network</th><th>IP equipo (network+50)</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- ============ FIRMWARE ============ -->
+    <section id="tab-fw" class="card" hidden>
+      <h2>Firmware</h2>
+      <p class="hint">Catálogo de modelos y versiones con los que trabajan los técnicos
+        (la APK trae los .bin ya embarcados; aquí se registra qué modelo lleva qué versión).</p>
+      <form class="grid" id="f-fw">
+        <input type="hidden" name="id">
+        <div><label>Modelo *</label><input name="modelo" placeholder="PowerBeam M5 400 XW" required></div>
+        <div><label>Versión</label><input name="version" placeholder="XM.v6.3.2"></div>
+        <div class="full"><label>Notas</label><input name="notas" placeholder="dónde aplica, cambio pendiente..."></div>
+        <div class="full row">
+          <button class="btn" type="submit">Guardar</button>
+          <button class="btn ghost" type="button" data-reset="f-fw">Nuevo</button>
+        </div>
+      </form>
+      <table id="t-fw" style="margin-top:12px">
+        <thead><tr><th>Modelo</th><th>Versión</th><th>Notas</th><th>Creado</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- ============ TÉCNICOS / IPs ============ -->
+    <section id="tab-tec" class="card" hidden>
+      <h2>Técnicos / IPs</h2>
+      <p class="hint">Quién tiene cada IP. La IP típica de un técnico es la de su zona con
+        sufijo 50 (ej. zona 192.168.80. → <code>192.168.80.50</code>). Cada IP solo puede
+        tener un técnico; al cambiarla queda registrada quién la usaba.</p>
+      <form class="grid" id="f-tec">
+        <input type="hidden" name="id">
+        <div><label>Técnico *</label><input name="nombre" placeholder="nombre y apellido" required></div>
+        <div><label>IP *</label><input name="ip" placeholder="192.168.80.50" required></div>
+        <div><label>Notas</label><input name="notas" placeholder="celular, zona, observaciones..."></div>
+        <div><label><input type="checkbox" name="activo" checked> Activo</label></div>
+        <div class="full row">
+          <button class="btn" type="submit">Guardar</button>
+          <button class="btn ghost" type="button" data-reset="f-tec">Nuevo</button>
+        </div>
+      </form>
+      <div class="row" style="margin:12px 0 6px">
+        <input id="tec-q" placeholder="Buscar por nombre o IP..." style="max-width:260px">
+        <span class="muted" id="tec-count"></span>
+      </div>
+      <table id="t-tec">
+        <thead><tr><th>IP</th><th>Técnico</th><th>Estado</th><th>Notas</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- ============ AJUSTES ============ -->
+    <section id="tab-set" class="card" hidden>
+      <h2>Ajustes</h2>
+      <h3>Cambiar contraseña</h3>
+      <form class="grid" id="f-pass" style="max-width:520px">
+        <div><label>Actual</label><input name="actual" type="password" autocomplete="current-password" required></div>
+        <div><label>Nueva (mín. 6)</label><input name="nueva" type="password" autocomplete="new-password" minlength="6" required></div>
+        <div class="full row">
+          <button class="btn" type="submit">Cambiar</button>
+        </div>
+      </form>
+      <p class="hint" style="margin-top:14px">
+        La APK se conecta con <code>Admin → Nube → URL</code>:
+        <code>http://&lt;IP-de-esta-PC&gt;:8080</code> — la IP de esta PC se ve con
+        <code>ipconfig</code> en la consola de Windows.
+      </p>
+    </section>
+
+  </main>
+</div>
+
+<div id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>

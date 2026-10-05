@@ -1,0 +1,96 @@
+/* ISP CONFIG — panel del servidor (sin dependencias, tema del log de la app) */
+* { box-sizing: border-box; }
+:root {
+  --bg: #14181c;
+  --panel: #1c2329;
+  --panel2: #232c33;
+  --line: #34414a;
+  --txt: #d8e2e8;
+  --dim: #8ea1ad;
+  --ok: #6ee7a0;
+  --acc: #39c0ff;
+  --bad: #ff7b72;
+  --warn: #ffd479;
+}
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--txt);
+  font: 14px/1.45 "Segoe UI", Roboto, system-ui, sans-serif; }
+h1, h2, h3 { font-weight: 600; margin: .2em 0; }
+a { color: var(--acc); }
+code, .mono { font-family: Consolas, "Cascadia Mono", monospace; }
+
+/* ---- login ---- */
+#login { max-width: 340px; margin: 12vh auto; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 10px; padding: 22px; }
+#login h1 { font-size: 20px; }
+#login p { color: var(--dim); font-size: 13px; }
+
+/* ---- layout ---- */
+header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 5; }
+header .brand { font-weight: 700; letter-spacing: .4px; }
+header .brand span { color: var(--acc); }
+nav { display: flex; gap: 4px; flex-wrap: wrap; }
+nav button { background: transparent; border: 1px solid transparent; color: var(--dim);
+  padding: 6px 10px; border-radius: 8px; cursor: pointer; font: inherit; }
+nav button:hover { color: var(--txt); background: var(--panel2); }
+nav button.on { color: var(--bg); background: var(--ok); font-weight: 600; }
+header .right { margin-left: auto; display: flex; gap: 8px; align-items: center;
+  color: var(--dim); font-size: 13px; }
+
+main { padding: 16px; max-width: 1100px; margin: 0 auto; }
+section.card { background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+section.card h2 { font-size: 16px; margin-bottom: 10px; }
+.hint { color: var(--dim); font-size: 12.5px; margin: 4px 0 10px; }
+
+/* ---- tablas ---- */
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line);
+  vertical-align: top; }
+th { color: var(--dim); font-weight: 600; font-size: 12.5px; text-transform: uppercase;
+  letter-spacing: .4px; }
+tr:hover td { background: var(--panel2); }
+td.ip { font-family: Consolas, monospace; color: var(--acc); }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 999px;
+  font-size: 12px; border: 1px solid var(--line); }
+.badge.on { color: var(--ok); border-color: var(--ok); }
+.badge.off { color: var(--dim); }
+.badge.libre { color: var(--warn); border-color: var(--warn); }
+
+/* ---- formularios ---- */
+form.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px; align-items: end; }
+form.grid .full { grid-column: 1 / -1; }
+label { display: block; font-size: 12px; color: var(--dim); margin-bottom: 4px; }
+input, select, textarea { width: 100%; background: var(--panel2); color: var(--txt);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--acc); }
+input[type="checkbox"] { width: auto; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+button.btn { background: var(--acc); color: #06222f; border: 0; padding: 8px 14px;
+  border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+button.btn:hover { filter: brightness(1.1); }
+button.btn.ghost { background: transparent; color: var(--txt); border: 1px solid var(--line); }
+button.btn.danger { background: transparent; color: var(--bad); border: 1px solid var(--bad); }
+button.mini { background: transparent; border: 1px solid var(--line); color: var(--dim);
+  border-radius: 6px; padding: 3px 8px; cursor: pointer; font-size: 12px; }
+button.mini:hover { color: var(--txt); border-color: var(--acc); }
+
+/* ---- stats ---- */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.stat { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px; }
+.stat b { display: block; font-size: 26px; color: var(--ok); }
+.stat span { color: var(--dim); font-size: 12.5px; }
+
+/* ---- toasts / estado ---- */
+#toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+  background: var(--panel2); border: 1px solid var(--line); color: var(--txt);
+  padding: 10px 16px; border-radius: 10px; opacity: 0; transition: opacity .25s;
+  pointer-events: none; z-index: 50; max-width: 90vw; }
+#toast.show { opacity: 1; }
+#toast.err { border-color: var(--bad); color: var(--bad); }
+#toast.ok { border-color: var(--ok); color: var(--ok); }
+.muted { color: var(--dim); }
+[hidden] { display: none !important; }
