@@ -3,14 +3,21 @@ declare(strict_types=1);
 
 /**
  * Crea data/isp.sqlite con el esquema del servidor y copia zonas + APs desde
- * el nodos.db real (assets/seed/nodos.db) que ya trae la APK.
+ * el nodos.db real que trae la carpeta (server/seed_data/nodos.db).
  *
  * Uso:  php scripts/seed.php  [ruta/al/nodos.db]
  * No pisa una base ya existente (borra data/isp.sqlite si quieres re-sembrar).
  */
 
 $root = dirname(__DIR__);                 // .../wisp_configurator/server
-$src = $argv[1] ?? $root . '/../assets/seed/nodos.db';
+$src = $argv[1] ?? null;
+if ($src === null) {
+    // Portátil: primero la copia que viaja con esta carpeta; si estás dentro
+    // del repo completo, se usa la original assets/seed/nodos.db.
+    $bundled = $root . '/seed_data/nodos.db';
+    $repo = $root . '/../assets/seed/nodos.db';
+    $src = is_file($bundled) ? $bundled : $repo;
+}
 $out = $root . '/data/isp.sqlite';
 
 if (!is_file($src)) {

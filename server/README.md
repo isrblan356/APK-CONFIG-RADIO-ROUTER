@@ -15,7 +15,8 @@ Cero dependencias: solo PHP 8 con `pdo_sqlite`.
    ```
 3. **PATH**: agrega `C:\php` al PATH del sistema (o copia `php.exe` junto a
    `server\iniciar.bat`, también funciona).
-4. **Copia la carpeta `server/`** a esa PC (USB, git, lo que sea).
+4. **Copia la carpeta `server/` completa** a esa PC (USB, git, lo que sea).
+   La carpeta es autocontenida: `seed_data/nodos.db` trae tus 8 zonas y 259 APs.
 5. **Arranca**: doble clic en `server\iniciar.bat`.
    - Si la BD no existe la siembra sola con tus 8 zonas + 259 APs.
    - Deja la ventana abierta: es el servidor (`Ctrl+C` la detiene).
@@ -35,7 +36,6 @@ php -S 0.0.0.0:8080 -t public            # 0.0.0.0 para que el celular entre
 
 `0.0.0.0` escucha en todas las interfaces; con `127.0.0.1` solo entra el PC.
 `data/isp.sqlite` no se pisa si ya existe (borra para re-sembrar).
-
 Comprueba:
 
 ```bash
