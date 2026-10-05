@@ -1,7 +1,7 @@
 name: wisp_configurator
 description: APK offline-first para configurar radios Ubiquiti (AirOS M/AC) y routers TP-Link. Todo instalado en el móvil + sync híbrido opcional.
 publish_to: 'none'
-version: 1.1.3+5
+version: 1.1.4+6
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -33,6 +33,9 @@ dependencies:
   camera: ^0.12.1
   sensors_plus: ^7.1.1
   geolocator: ^14.0.2
+  # GUI AirOS dentro de la app (botón "Ver parámetros") con login automático:
+  # es el único que soporta onReceivedHttpAuthRequest (HTTP Basic de AirOS).
+  flutter_inappwebview: ^6.1.5
 
 dev_dependencies:
   flutter_test:

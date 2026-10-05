@@ -7,6 +7,8 @@ class UbntRadio extends Equatable {
   final String firmware; // ej: v6.3.2
   final bool isAc;
   final String lanSpeedDuplex;
+  /// Clave que autenticó en la detección (sirve para firmware/config/web).
+  final String workingPass;
 
   const UbntRadio({
     required this.ip,
@@ -14,12 +16,24 @@ class UbntRadio extends Equatable {
     required this.firmware,
     required this.isAc,
     this.lanSpeedDuplex = '',
+    this.workingPass = '',
   });
+
+  UbntRadio copyWith({String? lanSpeedDuplex, String? workingPass}) =>
+      UbntRadio(
+        ip: ip,
+        model: model,
+        firmware: firmware,
+        isAc: isAc,
+        lanSpeedDuplex: lanSpeedDuplex ?? this.lanSpeedDuplex,
+        workingPass: workingPass ?? this.workingPass,
+      );
 
   bool needsFirmwareUpdate(String fwTarget) => firmware != fwTarget;
 
   @override
-  List<Object> get props => [ip, model, firmware, isAc, lanSpeedDuplex];
+  List<Object> get props =>
+      [ip, model, firmware, isAc, lanSpeedDuplex, workingPass];
 }
 
 /// Parámetros para aprovisionar (equivale a zona+nodo de nodos.db).

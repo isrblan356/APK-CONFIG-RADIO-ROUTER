@@ -4,6 +4,7 @@ import '../../../core/config/app_settings.dart';
 import '../../../core/di/providers.dart';
 import '../../inventory/domain/entities.dart';
 import '../domain/entities/ubnt_radio.dart';
+import 'ubnt_webview_page.dart';
 
 /// Flujo: 1) Detectar radio 2) Elegir Zona/AP 3) Subir firmware+config o Reset.
 /// Port del menú 1/2/3 de final.php.
@@ -114,7 +115,14 @@ class _UbntPageState extends ConsumerState<UbntPage> {
                     r.fold(
                       (f) => addLog('ERROR: ${f.message}'),
                       (rad) {
-                        setState(() => radio = rad);
+                        setState(() {
+                          radio = rad;
+                          // La clave que ya autenticó pasa a ser la de
+                          // firmware/config/web (sin volver a probar).
+                          if (rad.workingPass.isNotEmpty) {
+                            sshPass = rad.workingPass;
+                          }
+                        });
                         addLog(
                             'OK (${rad.model}) FW:${rad.firmware} IP:${rad.ip} LAN:${rad.lanSpeedDuplex}');
                         final fwObj = AppSettings.instance.fwTarget(rad.isAc);
@@ -149,11 +157,34 @@ class _UbntPageState extends ConsumerState<UbntPage> {
                 ? null
                 : () async {
                     setState(() => busy = true);
-                    await ubnt.updateFirmwareIfNeeded(radio!, sshPass, addLog);
+                    final r = await ubnt.updateFirmwareIfNeeded(
+                        radio!, sshPass, addLog);
+                    r.fold(
+                        (f) => addLog('ERROR: ${f.message}'),
+                        (_) => addLog('Firmware actualizado. Pulsa '
+                            '1. Detectar para verificar.'));
                     setState(() => busy = false);
                   },
             icon: const Icon(Icons.system_update),
             label: const Text('2. Firmware'),
+          ),
+          ElevatedButton.icon(
+            onPressed: (busy || radio == null)
+                ? null
+                : () {
+                    final pass = radio!.workingPass.isNotEmpty
+                        ? radio!.workingPass
+                        : sshPass;
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => UbntWebViewPage(
+                        url: 'http://${radio!.ip}/',
+                        user: AppSettings.instance.ubntUser,
+                        password: pass,
+                      ),
+                    ));
+                  },
+            icon: const Icon(Icons.language),
+            label: const Text('Ver parámetros'),
           ),
         ]),
         const SizedBox(height: 8),

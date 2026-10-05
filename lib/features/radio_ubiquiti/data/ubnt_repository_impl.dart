@@ -121,7 +121,7 @@ class UbntRepositoryImpl implements UbntRepository {
       }
       try {
         final raw = await _exec(c, '/usr/www/status.cgi');
-        final radio = _parseStatus(ip, raw);
+        final radio = _parseStatus(ip, raw).copyWith(workingPass: pass);
         c.close();
         log('$ip: OK con "$pass" (${radio.model} ${radio.firmware})');
         return (radio, pass);
@@ -266,22 +266,49 @@ class UbntRepositoryImpl implements UbntRepository {
       }
       onLog('Firmware actual ${radio.firmware}, se subirá a $target...');
       // En móvil el .bin va en assets/firmware/<modelo>/fwupdate.bin.
-      // Se carga a memoria y se sube por SFTP a /tmp/fwupdate.bin.
-      final fwAsset = 'assets/firmware/${radio.model}/fwupdate.bin';
-      late Uint8List bytes;
+      // Fallback: todos los M5 XW comparten el mismo .bin XW.
+      Uint8List? bytes;
+      var usedAsset = 'assets/firmware/${radio.model}/fwupdate.bin';
       try {
-        final data = await rootBundle.load(fwAsset);
+        final data = await rootBundle.load(usedAsset);
         bytes = data.buffer.asUint8List();
-      } catch (_) {
+      } catch (_) {}
+      if (bytes == null &&
+          (radio.model.contains('XW') || radio.model.contains('XM'))) {
+        const sameFamily = [
+          'PowerBeam M5 400 XW',
+          'PowerBeam M5 300 XW',
+          'LiteBeam M5 XW',
+          'Rocket M5 XW',
+          'NanoStation M5 XW',
+          'NanoStation Loco M5 XW',
+        ];
+        for (final m in sameFamily) {
+          final p = 'assets/firmware/$m/fwupdate.bin';
+          try {
+            final data = await rootBundle.load(p);
+            bytes = data.buffer.asUint8List();
+            usedAsset = p;
+            onLog('Sin carpeta "$m" exacta: se usa $p (mismo bin XW).');
+            break;
+          } catch (_) {}
+        }
+      }
+      if (bytes == null) {
         return Left(DeviceFailure(
-            'Falta $fwAsset en la APK. Copia Firmware/${radio.model}/fwupdate.bin a assets/firmware/'));
+            'Falta $usedAsset en la APK. Copia '
+            'backup_script/Firmware/${radio.model}/fwupdate.bin a '
+            'assets/firmware/${radio.model}/ y vuelve a compilar, o pídeseme '
+            'el build con ese modelo.'));
       }
       final client = await _connect(
-          radio.ip, AppSettings.instance.ubntUser, sshPass);
+          radio.ip, AppSettings.instance.ubntUser, sshPass,
+          onLog: onLog);
       if (client == null) {
         return const Left(AuthFailure('No se pudo conectar por SSH para firmware.'));
       }
       try {
+        onLog('Subiendo $usedAsset por SFTP (va, no cierres la app)...');
         final sftp = await client.sftp();
         final f = await sftp.open('/tmp/fwupdate.bin',
             mode: SftpFileOpenMode.create |
@@ -289,10 +316,12 @@ class UbntRepositoryImpl implements UbntRepository {
                 SftpFileOpenMode.write);
         await f.writeBytes(bytes);
         await f.close();
+        onLog('fwupdate.bin listo en el equipo, aplicando...');
         await _exec(client, '/sbin/fwupdate -m');
-        onLog('Firmware subido, esperando reinicio...');
+        onLog('Firmware aplicado, esperando reinicio...');
         await Future.delayed(
             const Duration(seconds: AppConfig.sshInitWaitSec + 20));
+        onLog('Listo. Vuelve a pulsar 1. Detectar para verificar $target.');
       } finally {
         client.close();
       }
@@ -307,7 +336,8 @@ class UbntRepositoryImpl implements UbntRepository {
       UbntProvisionParams params, void Function(String) onLog) async {
     try {
       final client = await _connect(
-          params.radioIp, params.sshUser, params.sshPass);
+          params.radioIp, params.sshUser, params.sshPass,
+          onLog: onLog);
       if (client == null) {
         return const Left(AuthFailure('SSH falló. Prueba passes ubnt / r1nku.2015 / R1nku.2015'));
       }

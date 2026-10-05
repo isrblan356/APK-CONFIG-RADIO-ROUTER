@@ -1,10 +1,20 @@
 {
   "models": [
-    { "model": "PowerBeam M5 400 XW", "fw": "XM.v6.3.2", "asset": "assets/firmware/PowerBeam M5 400 XW/fwupdate.bin" },
-    { "model": "PowerBeam M5 300 XW", "fw": "XM.v6.3.2", "asset": "assets/firmware/PowerBeam M5 300 XW/fwupdate.bin" },
-    { "model": "LiteBeam M5 XW", "fw": "XM.v6.3.2", "asset": "assets/firmware/LiteBeam M5 XW/fwupdate.bin" },
-    { "model": "Rocket M5 XW", "fw": "XW.v6.3.2", "asset": "assets/firmware/Rocket M5 XW/fwupdate.bin" },
-    { "model": "NanoBeam 5AC 16", "fw": "v8.7.4", "asset": "assets/firmware/NanoBeam 5AC 16/fwupdate.bin" }
+    { "model": "PowerBeam M5 400 XW", "fw": "XM.v6.3.2", "asset": "assets/firmware/PowerBeam M5 400 XW/fwupdate.bin", "embedded": true },
+    { "model": "PowerBeam M5 300 XW", "fw": "XM.v6.3.2", "asset": "assets/firmware/PowerBeam M5 300 XW/fwupdate.bin", "embedded": true },
+    { "model": "LiteBeam M5 XW", "fw": "XM.v6.3.2", "asset": "assets/firmware/LiteBeam M5 XW/fwupdate.bin", "embedded": true },
+    { "model": "Rocket M5 XW", "fw": "XW.v6.3.2", "asset": "assets/firmware/Rocket M5 XW/fwupdate.bin", "embedded": true },
+    { "model": "NanoBeam 5AC 16", "fw": "v8.7.4", "asset": "assets/firmware/NanoBeam 5AC 16/fwupdate.bin", "embedded": true }
   ],
-  "note": "Copia tus .bin de backup_script/Firmware/ a estas rutas. Quedan EMBARCADOS en la APK (instalado en el móvil, sin descargar nada)."
+  "families": {
+    "XW/XM": [
+      "PowerBeam M5 400 XW",
+      "PowerBeam M5 300 XW",
+      "LiteBeam M5 XW",
+      "Rocket M5 XW",
+      "NanoStation M5 XW",
+      "NanoStation Loco M5 XW"
+    ]
+  },
+  "note": "Los 5 modelos de arriba van EMBARCADOS en la APK (offline). Cualquier M5 XW/XM usa el mismo bin (familia XW): si falta la carpeta exacta la app cae a la primera disponible. Copia tus .bin de backup_script/Firmware/ a assets/firmware/<modelo>/fwupdate.bin para agregar modelos."
 }
