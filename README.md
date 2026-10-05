@@ -24,11 +24,16 @@ Port limpio de tus scripts `backup_script/final.php` (radios) y `tplink/2new.sh`
 
 ## 3. Modo híbrido nube (opcional, apagado por defecto)
 
-- `AppConfig.cloudEnabledDefault = false` + `CLOUD_ENDPOINT = ''` → 100% local.
-- Para activar: `InventoryLocal(cloud, cloudEnabled: true)` + `--dart-define=CLOUD_ENDPOINT=https://tu-api`.
+- 100% local por defecto. Para activarlo: pestaña **Admin → Nube** → URL del servidor
+  (`http://IP-del-servidor:8080`) + *Activar sincronización* + **Probar conexión**.
+  El valor de fábrica sigue pudiendo venir de `--dart-define=CLOUD_ENDPOINT=...`.
+- **Servidor incluido**: `server/` (PHP 8 + SQLite, cero dependencias). Cópialo a otra
+  PC, doble clic en `iniciar.bat` y listo (siembra solo las 8 zonas + 259 APs).
+  Pasos completos en `server/README.md`; listo para copiar en
+  `Downloads/ISP-CONFIG-servidor.zip`.
 - Contrato: `GET /zones` → `[{"id":1,"zona":"Girardota","network":"192.168.80."}]` y `GET /aps?zona=1` → `[{"idzona":"1","idnodo":1,"nodo":"La Palma - AP1","ssid":"rinku_ap1_lapalma"}]`. Acepta envoltorios (`{"zones":[...]}`, `{"data":[...]}`) y alias en inglés (`name`/`network`/`zoneId`): ver `lib/features/inventory/data/cloud_payload.dart`.
-- Contrato de nodos con coordenadas (tab Brújula): `GET /nodes` → `[{"id":1,"nombre":"Girardota AP12","lat":6.3201,"lng":-75.4382,"alt":1500,"zona":"Girardota"}]`. Acepta `{"nodes":[...]}`, alias (`name`/`latitude`/`longitude`/`lon`) y coma decimal. Ver `lib/features/ar_compass/data/ar_nodes_cloud.dart`.
-- La sync **nunca borra lo local**: solo reemplaza si la nube devolvió datos válidos; si algo falla, sigues con la DB del móvil. En el módulo Brújula solo se reemplazan los nodos de origen `nube`: los **manuales jamás se borran**.
+- Contrato de nodos con coordenadas (tab Brújula): `GET /nodes` → `[{"id":1,"nombre":"Girardota AP12","lat":6.3201,"lng":-75.4382,"alt":1500,"zona":"Girardota"}]`. Acepta `{"nodes":[...]}`, alias (`name`/`latitude`/`longitude`/`lon`) y coma decimal. Ver `lib/features/ar_compass/data/ar_nodes_cloud.dart`. Los manuales se **suben** con `POST /nodes` (clave estable `d<id>`, upsert: repetir no duplica).
+- La sync **nunca borra lo local**: solo reemplaza si la nube devolvió datos válidos; si algo falla, sigues con la DB del móvil. En el módulo Brújula solo se reemplazan los nodos de origen `nube`: los **manuales jamás se borran** (y los que subiste no vuelven duplicados).
 
 ## 4. Compilar la APK
 
@@ -82,21 +87,26 @@ Ya van fusionados en `android/app/src/main/AndroidManifest.xml` (`INTERNET`, `AC
 2. Tab Zonas: verifica Zona/AP y WAN esperada (`.50` / GW `.1`).
 3. Tab Radio: elige **IP del radio** (Auto = 1.20 → 172.1 → 20.1; o fija 192.168.172.1 si estás en su WiFi) → **1 Detectar** → elige pass SSH → elige Zona/AP → **3 Subir config**. O Reset si es necesario.
 4. Conecta al router: Nuevo → únete a su WiFi de fábrica → **Conectar 192.168.0.1** → SSID+clave → **Aprovisionar**. Existente → WiFi del cliente → **Conectar .20.2** → nueva clave → reboot.
-5. Tab **Brújula** (apuntar antena): permite cámara + ubicación → **Nodos** → `+` para cargar uno a mano (nombre, lat, lng) o ☁ para bajarlos de `GET /nodes` → elige el nodo → gira el teléfono hasta que el marcador quede centrado (Δ ≤ 3° en verde). Sin GPS toca **Posición** y escribe tus coordenadas; sin cámara se ve la mira de brújula con flecha ámbar.
+5. Tab **Brújula** (apuntar antena): permite cámara + ubicación → **Nodos** → `+` para cargar uno a mano (nombre, lat, lng) → ☁ sube los manuales al servidor y ☇ (nube) los baja → elige el nodo → gira el teléfono hasta que el marcador quede centrado (Δ ≤ 3° en verde). Sin GPS toca **Posición** y escribe tus coordenadas; sin cámara se ve la mira de brújula con flecha ámbar.
+6. Tab **Admin** (solo técnico): primera vez entra con `admin` y **elige contraseña** (obligatoria, 5 intentos → bloqueo de 5 min). Ahí se edita todo: sufijo WAN/GW del *network 50*, IPs y claves del radio, firmware M/AC, IPs y claves del TP-Link, URL del servidor, token de escritura y la propia contraseña. **Fábrica** restaura la config (no la contraseña) y **Cerrar sesión** vuelve al login.
 
 ## 6. Arquitectura limpia (30 años, sin atajos)
 
 ```
 lib/
-  main.dart            # DI Riverpod
+  main.dart            # DI Riverpod + init de AppSettings
   app.dart             # Tabs
-  core/config/app_config.dart      # todas las IPs/passes/FW en un solo lugar
+  core/config/app_config.dart      # valores de fábrica (const, son los defaults)
+  core/config/app_settings.dart    # config editable/Admin persistida en prefs
   core/error/failures.dart         # Either<Failure, T> en vez de throws
   core/network/reachability.dart   # socket TCP (Android no permite ICMP sin root)
   features/radio_ubiquiti/  domain/entities + repositories / data/ubnt_repository_impl / presentation/ubnt_page
   features/router_tplink/   domain/entities / data/tplink_repository_impl / presentation/tplink_page
   features/inventory/       domain + data/inventory_local (sqflite) + presentation/zones_page
   features/ar_compass/      domain/geo (rumbo+distancia puros) + data/ar_node_store (sqflite) + presentation/ar_page
+  features/admin/           domain/admin_auth (SHA-256 + bloqueo) + presentation/admin_page
+server/                    # API PHP+SQLite para otra PC (iniciar.bat)
+tool/verify_server.dart    # prueba el servidor con los parsers reales
 test/ubnt_template_test.dart  # regla CHANGESSID/WAN/GW
 test/geo_test.dart            # rumbo desde acelerómetro+magnetómetro
 ```
