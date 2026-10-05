@@ -8,8 +8,10 @@ abstract class UbntRepository {
   /// 192.168.172.1, la que usa el radio al estar el móvil en su WiFi);
   /// si es null, se recorren AppConfig.ubntCandidateIps en orden
   /// (1.20 fábrica, 172.1 WiFi del radio, 20.1 ya configurada).
+  /// [onLog] recibe el avance en vivo (qué IP, puerto, clave) para el log.
   /// Port de las líneas 161-173 de final.php.
-  Future<Either<Failure, UbntRadio>> detectAndIdentify({String? ip});
+  Future<Either<Failure, UbntRadio>> detectAndIdentify(
+      {String? ip, void Function(String)? onLog});
 
   /// Sube firmware si la versión no coincide (port ubnt_update_firmware).
   Future<Either<Failure, void>> updateFirmwareIfNeeded(UbntRadio radio, String sshPass, void Function(String) onLog);

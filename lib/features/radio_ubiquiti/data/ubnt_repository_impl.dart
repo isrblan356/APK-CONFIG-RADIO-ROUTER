@@ -93,38 +93,53 @@ class UbntRepositoryImpl implements UbntRepository {
         ip: ip, model: model, firmware: fw, isAc: isAc, lanSpeedDuplex: duplex);
   }
 
-  Future<(UbntRadio, String workingPass)?> _detect(String ip) async {
-    if (!await reachability.isUbntAlive(ip)) return null;
+  Future<(UbntRadio, String workingPass)?> _detect(
+      String ip, void Function(String) log) async {
+    if (!await reachability.isUbntAlive(ip)) {
+      log('$ip: sin respuesta en los puertos 22/80');
+      return null;
+    }
+    log('$ip: equipo responde, probando claves SSH...');
     for (final pass in AppSettings.instance.ubntPasses) {
+      log('$ip: clave "$pass"...');
       final c = await _connect(ip, AppSettings.instance.ubntUser, pass);
-      if (c == null) continue;
+      if (c == null) {
+        log('$ip: clave "$pass" no funcionó (¿SSH cerrado o clave?)');
+        continue;
+      }
       try {
         final raw = await _exec(c, '/usr/www/status.cgi');
         final radio = _parseStatus(ip, raw);
         c.close();
+        log('$ip: OK con "$pass" (${radio.model} ${radio.firmware})');
         return (radio, pass);
-      } catch (_) {
+      } catch (e) {
+        log('$ip: status.cgi falló: $e');
         c.close();
       }
     }
+    log('$ip: ninguna clave funcionó');
     return null;
   }
 
   @override
-  Future<Either<Failure, UbntRadio>> detectAndIdentify({String? ip}) async {
+  Future<Either<Failure, UbntRadio>> detectAndIdentify(
+      {String? ip, void Function(String)? onLog}) async {
+    final log = onLog ?? ((_) {});
     try {
       // Sin IP explícita: fábrica -> WiFi del radio (172.1) -> configurada.
       final targets = (ip == null || ip.isEmpty)
           ? AppSettings.instance.ubntCandidateIps
           : <String>[ip];
       for (final t in targets) {
-        final found = await _detect(t);
+        log('Probando $t ...');
+        final found = await _detect(t, log);
         if (found != null) return Right(found.$1);
       }
       return Left(ConnectionFailure(
           'No responde ${targets.join(' ni ')} por SSH/puerto 22-80. '
-          'Verifica que el móvil esté en el WiFi del radio (192.168.172.1) '
-          'o cableado a su LAN.'));
+          'Verifica que el móvil tenga IP 192.168.172.x en el WiFi del radio '
+          '(WiFi del radio = 192.168.172.1) o cableado a su LAN.'));
     } catch (e) {
       return Left(DeviceFailure('Error identificando radio: $e'));
     }

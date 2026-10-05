@@ -94,6 +94,11 @@ class _UbntPageState extends ConsumerState<UbntPage> {
         ],
       ),
       body: ListView(padding: const EdgeInsets.all(12), children: [
+        if (busy)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: LinearProgressIndicator(),
+          ),
         Wrap(spacing: 8, children: [
           ElevatedButton.icon(
             onPressed: busy
@@ -104,7 +109,8 @@ class _UbntPageState extends ConsumerState<UbntPage> {
                       log = '';
                     });
                     final r = await ubnt.detectAndIdentify(
-                        ip: ipChoice == 'auto' ? null : ipChoice);
+                        ip: ipChoice == 'auto' ? null : ipChoice,
+                        onLog: addLog);
                     r.fold(
                       (f) => addLog('ERROR: ${f.message}'),
                       (rad) {
