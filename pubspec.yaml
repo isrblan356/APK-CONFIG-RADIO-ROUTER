@@ -1,7 +1,7 @@
 name: wisp_configurator
 description: APK offline-first para configurar radios Ubiquiti (AirOS M/AC) y routers TP-Link. Todo instalado en el móvil + sync híbrido opcional.
 publish_to: 'none'
-version: 1.1.4+6
+version: 1.1.5+7
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -52,6 +52,9 @@ flutter:
     - assets/seed/
     - assets/firmware/manifest.json
     - "assets/firmware/PowerBeam M5 400 XW/"
+    - "assets/firmware/PowerBeam M5 300 XW/"
+    - "assets/firmware/LiteBeam M5 XW/"
+    - "assets/firmware/Rocket M5 XW/"
     - "assets/firmware/NanoBeam 5AC 16/"
     - assets/templates/ct
     - "assets/templates/PowerBeam M5 400 XW/"

@@ -16,7 +16,7 @@ Port limpio de tus scripts `backup_script/final.php` (radios) y `tplink/2new.sh`
 
 - `assets/templates/<modelo>/template.cfg` — copiados de tus `configs/` (4 modelos incluidos).
 - `assets/templates/ct` — compliance (vacío en tu backup, se sube si existe).
-- `assets/firmware/<modelo>/fwupdate.bin` — 2 incluidos (PowerBeam M5 400 XW 7.4MB + NanoBeam 5AC 16 9.7MB). Agrega más copiando tus `Firmware/*/fwupdate.bin`.
+- `assets/firmware/<modelo>/fwupdate.bin` — 5 incluidos (PowerBeam M5 400 XW, PowerBeam M5 300 XW, LiteBeam M5 XW, Rocket M5 XW — todos XW, el mismo bin aplica a cualquier M5 XW — y NanoBeam 5AC 16). Agrega más copiando tus `Firmware/*/fwupdate.bin` **y declarando la carpeta en `pubspec.yaml` (`assets:`)**.
 - `assets/seed/nodos.db` — tu DB original completa (32KB).
 - `sqflite` + `shared_preferences` — inventario y credenciales locales, sin internet.
 
