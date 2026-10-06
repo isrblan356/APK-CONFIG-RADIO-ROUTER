@@ -173,6 +173,19 @@ function ensureSchema(PDO $pdo): void
         activo INTEGER NOT NULL DEFAULT 1,
         creado TEXT NOT NULL DEFAULT (datetime('now')))");
 
+    // Equipos con la APK instalada: la APK reporta en cada sync (POST) y aquí
+    // se ve quién la usa, con qué versión, desde qué IP y con qué técnico.
+    $pdo->exec("CREATE TABLE IF NOT EXISTS dispositivos(
+        id TEXT PRIMARY KEY,
+        modelo TEXT NOT NULL DEFAULT '',
+        so TEXT NOT NULL DEFAULT '',
+        version_apk TEXT NOT NULL DEFAULT '',
+        ip TEXT NOT NULL DEFAULT '',
+        tecnico TEXT NOT NULL DEFAULT '',
+        notas TEXT NOT NULL DEFAULT '',
+        registrado TEXT NOT NULL DEFAULT (datetime('now')),
+        ultimo_visto TEXT NOT NULL DEFAULT (datetime('now')))");
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS ajustes(k TEXT PRIMARY KEY, v TEXT NOT NULL)");
 
     // Contraseña inicial del panel: admin / admin (cámbiala en Ajustes).
@@ -312,7 +325,71 @@ if ($method === 'GET' && $path === '/stats') {
         'firmware' => $c('SELECT COUNT(*) FROM firmware'),
         'tecnicos' => $c('SELECT COUNT(*) FROM tecnicos'),
         'tecnicos_activos' => $c('SELECT COUNT(*) FROM tecnicos WHERE activo=1'),
+        'dispositivos' => $c('SELECT COUNT(*) FROM dispositivos'),
     ]);
+}
+
+// ---------- dispositivos con la APK instalada ----------
+
+if ($path === '/dispositivos') {
+    if ($method === 'GET') {
+        $id = trim((string) ($_GET['id'] ?? ''));
+        if ($id !== '') {
+            out(rows('SELECT * FROM dispositivos WHERE id = ?', [$id]));
+        }
+        out(rows('SELECT * FROM dispositivos ORDER BY ultimo_visto DESC'));
+    }
+    $d = body();
+    if ($method === 'POST') {
+        // Reporte de la APK en cada sync (sin sesión: solo registra su ficha).
+        $id = trim((string) ($d['id'] ?? ''));
+        if (strlen($id) < 8 || strlen($id) > 64) {
+            fail(422, 'id de dispositivo inválido');
+        }
+        $modelo = trim(substr((string) ($d['modelo'] ?? ''), 0, 80));
+        $so = trim(substr((string) ($d['so'] ?? ''), 0, 80));
+        $ver = trim(substr((string) ($d['version'] ?? ''), 0, 32));
+        $ip = trim(substr((string) ($_SERVER['REMOTE_ADDR'] ?? ''), 0, 45));
+        db()->prepare(
+            'INSERT INTO dispositivos(id, modelo, so, version_apk, ip)
+             VALUES(?,?,?,?,?)
+             ON CONFLICT(id) DO UPDATE SET
+               modelo = excluded.modelo, so = excluded.so,
+               version_apk = excluded.version_apk, ip = excluded.ip,
+               ultimo_visto = datetime(\'now\')'
+        )->execute([$id, $modelo, $so, $ver, $ip]);
+        $row = rows('SELECT * FROM dispositivos WHERE id = ?', [$id]);
+        if (!$row) {
+            fail(500, 'no se pudo registrar el dispositivo');
+        }
+        out($row[0]);
+    }
+    requireWrite();
+    if ($method === 'PUT') {
+        $id = trim((string) ($d['id'] ?? ''));
+        if ($id === '') {
+            fail(422, 'falta id');
+        }
+        $tecnico = trim(substr((string) ($d['tecnico'] ?? ''), 0, 80));
+        $notas = trim(substr((string) ($d['notas'] ?? ''), 0, 200));
+        db()->prepare('UPDATE dispositivos SET tecnico = ?, notas = ? WHERE id = ?')
+            ->execute([$tecnico, $notas, $id]);
+        $row = rows('SELECT * FROM dispositivos WHERE id = ?', [$id]);
+        if (!$row) {
+            fail(404, 'dispositivo no encontrado');
+        }
+        out($row[0]);
+    }
+    if ($method === 'DELETE') {
+        $id = trim((string) ($_GET['id'] ?? $d['id'] ?? ''));
+        if ($id === '') {
+            fail(422, 'falta id');
+        }
+        $st = db()->prepare('DELETE FROM dispositivos WHERE id = ?');
+        $st->execute([$id]);
+        out(['ok' => true, 'borrados' => $st->rowCount()]);
+    }
+    fail(405, 'método no permitido');
 }
 
 // ---------- zonas ----------

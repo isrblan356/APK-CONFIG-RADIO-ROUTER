@@ -110,6 +110,11 @@ class AppSettings {
     return Uri.tryParse(raw);
   }
 
+  /// Id estable de este equipo para el servidor (se genera la primera vez).
+  /// No entra en [resetConfig]: si cambia, el servidor lo verá como otro equipo.
+  String get deviceId => _s('deviceId', '');
+  Future<bool> setDeviceId(String v) => _setS('deviceId', v);
+
   // ---------- Módulo Admin ----------
 
   /// SHA-256 hex de la contraseña. Vacío = primera vez (admin/admin).

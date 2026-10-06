@@ -40,4 +40,8 @@ class AppConfig {
   static const cloudEnabledDefault = false;
   // Pon aquí tu endpoint si quieres respaldo. Si está vacío, no se sincroniza.
   static const cloudEndpoint = String.fromEnvironment('CLOUD_ENDPOINT', defaultValue: '');
+
+  // --- Identidad de la APK (reportada al servidor en cada sync) ---
+  // Mantener sincronizado con `version:` de pubspec.yaml.
+  static const appVersion = '1.1.6';
 }

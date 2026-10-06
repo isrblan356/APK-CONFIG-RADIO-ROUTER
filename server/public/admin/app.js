@@ -6,7 +6,7 @@ const BASE = new URL('../', location.href);
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-const state = { zones: [], nodes: [], aps: [], fw: [], tec: [], stats: {} };
+const state = { zones: [], nodes: [], aps: [], fw: [], tec: [], dev: [], stats: {} };
 
 // ---------- API ----------
 
@@ -81,16 +81,17 @@ $$('#tabs button').forEach((b) => b.addEventListener('click', () => {
 
 async function cargarTodo() {
   try {
-    const [zones, nodes, aps, fw, tec, stats] = await Promise.all([
+    const [zones, nodes, aps, fw, tec, dev, stats] = await Promise.all([
       api('GET', 'zones'),
       api('GET', 'nodes'),
       api('GET', 'aps'),
       api('GET', 'firmware'),
       api('GET', 'tecnicos'),
+      api('GET', 'dispositivos'),
       api('GET', 'stats'),
     ]);
     state.zones = zones; state.nodes = nodes; state.aps = aps;
-    state.fw = fw; state.tec = tec; state.stats = stats;
+    state.fw = fw; state.tec = tec; state.dev = dev; state.stats = stats;
     renderAll();
   } catch (err) {
     toast('Error cargando: ' + err.message, 'err');
@@ -105,6 +106,7 @@ function renderAll() {
   renderAps();
   renderFw();
   renderTec();
+  renderDev();
   fillZoneSelects();
 }
 
@@ -113,7 +115,7 @@ function renderStats() {
   $('#stats-box').innerHTML = [
     ['zonas', s.zonas], ['APs', s.aps], ['nodos', s.nodes],
     ['firmware', s.firmware], ['técnicos', s.tecnicos],
-    ['IPs activas', s.tecnicos_activos],
+    ['IPs activas', s.tecnicos_activos], ['dispositivos APK', s.dispositivos],
   ].map(([k, v]) => `<div class="stat"><b>${Number(v) || 0}</b><span>${k}</span></div>`).join('');
 }
 
@@ -172,8 +174,10 @@ function onForm(id, endpoint, render) {
 
 async function borrar(endpoint, id, que) {
   if (!confirm('¿Borrar ' + que + '?')) return;
+  // ids numéricos van como número; el resto (ej. id de dispositivo) como texto.
+  const param = /^\d+$/.test(String(id)) ? parseInt(id, 10) : String(id);
   try {
-    await api('DELETE', endpoint + '?id=' + id);
+    await api('DELETE', endpoint + '?id=' + encodeURIComponent(param));
     toast('Borrado ✓', 'ok');
     await cargarTodo();
   } catch (err) {
@@ -326,6 +330,49 @@ $('#tec-q').addEventListener('input', async (e) => {
     renderTec();
     state.tec = bak;
   }, 250);
+});
+
+// ---------- dispositivos con la APK ----------
+
+function renderDev() {
+  const q = ($('#dev-q').value || '').toLowerCase();
+  const list = state.dev.filter((d) =>
+    !q || (d.modelo || '').toLowerCase().includes(q) ||
+    (d.ip || '').includes(q) || (d.id || '').toLowerCase().includes(q) ||
+    (d.tecnico || '').toLowerCase().includes(q));
+  $('#dev-count').textContent = list.length + ' de ' + state.dev.length;
+  const tecOpts = (actual) =>
+    '<option value="">— sin asignar —</option>' +
+    state.tec.map((t) =>
+      `<option value="${esc(t.nombre)}"${t.nombre === actual ? ' selected' : ''}>` +
+      `${esc(t.nombre)} (${esc(t.ip)})</option>`).join('');
+  $('#t-dev tbody').innerHTML = list.map((d) => `<tr>
+    <td><b>${esc(d.modelo || 'sin modelo')}</b>
+        <span class="muted">${esc(d.so)}</span><br>
+        <span class="muted mono">${esc(String(d.id).slice(0, 12))}</span></td>
+    <td class="mono">${esc(d.version_apk || '—')}</td>
+    <td class="mono">${esc(d.ip || '—')}</td>
+    <td class="muted">${esc(d.ultimo_visto || '')}</td>
+    <td><select data-dev="${esc(d.id)}">${tecOpts(d.tecnico)}</select></td>
+    <td><button class="mini" data-del="dispositivos|${esc(d.id)}|este dispositivo">Borrar</button></td>
+  </tr>`).join('')
+    || '<tr><td colspan="6" class="muted">Ningún dispositivo ha sincronizado todavía.</td></tr>';
+}
+$('#dev-q').addEventListener('input', renderDev);
+
+// Asignar el técnico (y su IP) a cada dispositivo con la APK.
+document.addEventListener('change', async (e) => {
+  const sel = e.target.closest('select[data-dev]');
+  if (!sel) return;
+  try {
+    await api('PUT', 'dispositivos', { id: sel.dataset.dev, tecnico: sel.value });
+    const d = state.dev.find((x) => x.id === sel.dataset.dev);
+    if (d) d.tecnico = sel.value;
+    toast(sel.value ? 'Asignado a ' + sel.value : 'Técnico quitado', 'ok');
+  } catch (err) {
+    toast(err.message, 'err');
+    renderDev();
+  }
 });
 
 // ---------- contraseña ----------

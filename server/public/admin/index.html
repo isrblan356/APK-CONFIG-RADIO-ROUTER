@@ -10,7 +10,7 @@
 
 <div id="login">
   <h1>ISP CONFIG <span class="muted">· Servidor</span></h1>
-  <p>Panel de administración (nodos, APs, firmware e IPs de técnicos).</p>
+  <p>Panel de administración (nodos, APs, firmware, IPs de técnicos y dispositivos).</p>
   <form id="login-form" class="grid">
     <div class="full">
       <label>Usuario</label>
@@ -37,6 +37,7 @@
       <button data-tab="zones">Zonas</button>
       <button data-tab="fw">Firmware</button>
       <button data-tab="tec">Técnicos / IPs</button>
+      <button data-tab="dev">Dispositivos</button>
       <button data-tab="set">Ajustes</button>
     </nav>
     <div class="right">
@@ -173,6 +174,23 @@
       </div>
       <table id="t-tec">
         <thead><tr><th>IP</th><th>Técnico</th><th>Estado</th><th>Notas</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- ============ DISPOSITIVOS CON LA APK ============ -->
+    <section id="tab-dev" class="card" hidden>
+      <h2>Dispositivos con la APK</h2>
+      <p class="hint">Celulares/tabletas que han sincronizado con este servidor.
+        Cada equipo se registra solo al sincronizar (modelo, versión, IP) y aquí le
+        asignas su técnico — con la IP que le corresponde en la pestaña Técnicos.</p>
+      <div class="row" style="margin:0 0 6px">
+        <input id="dev-q" placeholder="Buscar modelo, IP o id..." style="max-width:260px">
+        <span class="muted" id="dev-count"></span>
+      </div>
+      <table id="t-dev">
+        <thead><tr><th>Equipo</th><th>Versión APK</th><th>IP</th>
+          <th>Última sincronización</th><th>Técnico asignado</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
     </section>

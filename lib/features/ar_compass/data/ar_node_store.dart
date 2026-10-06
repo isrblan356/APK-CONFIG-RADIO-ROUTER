@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dartz/dartz.dart';
@@ -5,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/config/device_registry.dart';
 import '../../../core/error/failures.dart';
 import '../domain/ar_node.dart';
 import 'ar_node_sync.dart';
@@ -102,6 +104,7 @@ class ArNodeStore {
     if (!cloudEnabled || endpoint.isEmpty) {
       return const Right('Nube no configurada: quedan solo los nodos locales.');
     }
+    unawaited(DeviceRegistry.reportar(cloud)); // quién sincroniza (best-effort)
     final ep = endpoint.replaceAll(RegExp(r'/+$'), '');
     try {
       final res = await cloud.get(Uri.parse('$ep/nodes'));
@@ -158,6 +161,7 @@ class ArNodeStore {
     if (!cloudEnabled || endpoint.isEmpty) {
       return const Right('Nube no configurada: nada subió.');
     }
+    unawaited(DeviceRegistry.reportar(cloud)); // quién sincroniza (best-effort)
     final ep = endpoint.replaceAll(RegExp(r'/+$'), '');
     final db = await _open();
     final rows =

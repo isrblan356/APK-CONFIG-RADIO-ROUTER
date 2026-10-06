@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -5,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/config/device_registry.dart';
 import '../../../core/error/failures.dart';
 import '../domain/entities.dart';
 import '../domain/inventory_repository.dart';
@@ -142,6 +144,7 @@ class InventoryLocal implements InventoryRepository {
     if (!cloudEnabled || endpoint.isEmpty) {
       return const Right(null); // 100% local, nada que hacer
     }
+    unawaited(DeviceRegistry.reportar(cloud)); // quién sincroniza (best-effort)
     final ep = endpoint.replaceAll(RegExp(r'/+$'), '');
     try {
       final zRes = await cloud.get(Uri.parse('$ep/zones'));

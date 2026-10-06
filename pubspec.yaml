@@ -1,7 +1,7 @@
-name: wisp_configurator
-description: APK offline-first para configurar radios Ubiquiti (AirOS M/AC) y routers TP-Link. Todo instalado en el móvil + sync híbrido opcional.
+﻿name: wisp_configurator
+description: APK offline-first para configurar radios Ubiquiti (AirOS M/AC) y routers TP-Link. Todo instalado en el mÃ³vil + sync hÃ­brido opcional.
 publish_to: 'none'
-version: 1.1.5+7
+version: 1.1.6+8
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -11,13 +11,13 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_riverpod: ^2.5.1
-  # 2.14.0 no compila con Dart >= 3.7 (error de no-promoción tras await en
+  # 2.14.0 no compila con Dart >= 3.7 (error de no-promociÃ³n tras await en
   # sftp_client.dart). 2.22.5+ exige pointycastle ^4 por eso van juntos.
   dartssh2: ^2.22.5
   http: ^1.2.1
   sqflite: ^2.3.3
   path: ^1.9.0
-  # OJO: no agregues path_provider aquí. No se usa (sqflite trae
+  # OJO: no agregues path_provider aquÃ­. No se usa (sqflite trae
   # getDatabasesPath) y arrastra objective_c, cuyo hook nativo rompe
   # `flutter test` / `flutter build` en rutas con espacios (ej. C:\Users\ISRAEL B\...).
   # path_provider: ^2.1.3
@@ -33,8 +33,8 @@ dependencies:
   camera: ^0.12.1
   sensors_plus: ^7.1.1
   geolocator: ^14.0.2
-  # GUI AirOS dentro de la app (botón "Ver parámetros") con login automático:
-  # es el único que soporta onReceivedHttpAuthRequest (HTTP Basic de AirOS).
+  # GUI AirOS dentro de la app (botÃ³n "Ver parÃ¡metros") con login automÃ¡tico:
+  # es el Ãºnico que soporta onReceivedHttpAuthRequest (HTTP Basic de AirOS).
   flutter_inappwebview: ^6.1.5
 
 dev_dependencies:
